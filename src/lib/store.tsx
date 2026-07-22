@@ -94,6 +94,13 @@ type Ctx = State & {
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: "meals" | "skinCare" | "hairCare" | "habits", id: string) => void;
   toggleTheme: () => void;
+  setBudgetSplit: (patch: Partial<BudgetSplit>) => void;
+  addSavingsGoal: (g: Omit<SavingsGoal, "id" | "current"> & { current?: number }) => void;
+  updateSavingsGoal: (id: string, patch: Partial<SavingsGoal>) => void;
+  addToSavings: (id: string, amount: number) => void;
+  removeSavingsGoal: (id: string) => void;
+  setAlinma: (patch: Partial<AlinmaLoan>) => void;
+  payAlinmaInstallment: () => void;
 };
 
 const STORAGE_KEY = "monazem-masareefi-v1";
