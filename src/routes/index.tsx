@@ -48,7 +48,7 @@ function Dashboard() {
   const tips: { icon: typeof Sparkles; text: string; tone: string }[] = [];
   if (totals.remaining < 0) tips.push({ icon: AlertCircle, text: "تجاوزت ميزانيتك! قلّل من المصاريف القابلة للتأجيل.", tone: "text-destructive" });
   if (totals.unpaidDebts > 0) tips.push({ icon: HandCoins, text: "سدد الديون قبل الشراء الاختياري لتحافظ على راحتك المالية.", tone: "text-warning" });
-  if (totals.urgent.length && urgent.some((u) => !u.paid))
+  if (urgent.some((u) => !u.paid))
     tips.push({ icon: Wallet, text: "لديك مصاريف عاجلة غير مدفوعة، ابدأ بها أولًا.", tone: "text-primary" });
   if (tips.length === 0)
     tips.push({ icon: Sparkles, text: "أحسنت! أموالك تحت السيطرة هذا الشهر.", tone: "text-success" });
