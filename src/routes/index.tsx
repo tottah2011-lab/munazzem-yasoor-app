@@ -82,10 +82,11 @@ function Dashboard() {
 
       {/* Stat grid */}
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <StatCard label="مصاريف عاجلة" value={formatSAR(totals.urgentTotal)} icon={Wallet} to="/urgent" tone="from-primary/20 to-primary/5" />
-        <StatCard label="قابلة للتأجيل" value={formatSAR(totals.postponableTotal)} icon={Clock} to="/postponable" tone="from-info/20 to-info/5" />
-        <StatCard label="ديون غير مسددة" value={formatSAR(totals.unpaidDebts)} icon={HandCoins} to="/debts" tone="from-destructive/20 to-destructive/5" />
-        <StatCard label="ديون مسددة" value={formatSAR(totals.paidDebts)} icon={TrendingUp} to="/debts" tone="from-success/20 to-success/5" />
+        <StatCard label="مصاريف عاجلة" value={formatSAR(totals.urgentTotal)} icon={Wallet} to="/expenses" tone="from-primary/20 to-primary/5" />
+        <StatCard label="قابلة للتأجيل" value={formatSAR(totals.postponableTotal)} icon={Clock} to="/expenses" tone="from-info/20 to-info/5" />
+        <StatCard label="ديون غير مسددة" value={formatSAR(totals.unpaidDebts)} icon={HandCoins} to="/expenses" tone="from-destructive/20 to-destructive/5" />
+        <StatCard label="ديون مسددة" value={formatSAR(totals.paidDebts)} icon={TrendingUp} to="/expenses" tone="from-success/20 to-success/5" />
+
       </div>
 
       <SectionTitle>توزيع المصاريف</SectionTitle>
