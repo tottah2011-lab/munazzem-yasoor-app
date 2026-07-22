@@ -14,6 +14,7 @@ import { Route as UrgentRouteImport } from './routes/urgent'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PostponableRouteImport } from './routes/postponable'
+import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as DebtsRouteImport } from './routes/debts'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -42,6 +43,11 @@ const PostponableRoute = PostponableRouteImport.update({
   path: '/postponable',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DebtsRoute = DebtsRouteImport.update({
   id: '/debts',
   path: '/debts',
@@ -56,6 +62,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/debts': typeof DebtsRoute
+  '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/debts': typeof DebtsRoute
+  '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/debts': typeof DebtsRoute
+  '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/debts'
+    | '/planner'
     | '/postponable'
     | '/reports'
     | '/settings'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/debts'
+    | '/planner'
     | '/postponable'
     | '/reports'
     | '/settings'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/debts'
+    | '/planner'
     | '/postponable'
     | '/reports'
     | '/settings'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DebtsRoute: typeof DebtsRoute
+  PlannerRoute: typeof PlannerRoute
   PostponableRoute: typeof PostponableRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostponableRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/debts': {
       id: '/debts'
       path: '/debts'
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DebtsRoute: DebtsRoute,
+  PlannerRoute: PlannerRoute,
   PostponableRoute: PostponableRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,

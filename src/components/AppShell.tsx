@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Wallet, Clock, HandCoins, Heart, BarChart3, Moon, Sun, Settings } from "lucide-react";
+import { Home, Wallet, Clock, HandCoins, Heart, BarChart3, Moon, Sun, Settings, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { useStore } from "@/lib/store";
 
