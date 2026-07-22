@@ -267,6 +267,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
       toggleTheme: () =>
         setState((s) => ({ ...s, theme: s.theme === "dark" ? "light" : "dark" })),
+      setBudgetSplit: (patch) =>
+        setState((s) => ({ ...s, budgetSplit: { ...s.budgetSplit, ...patch } })),
+      addSavingsGoal: (g) =>
+        setState((s) => ({
+          ...s,
+          savings: [{ id: uid(), current: g.current ?? 0, ...g }, ...s.savings],
+        })),
+      updateSavingsGoal: (id, patch) =>
+        setState((s) => ({
+          ...s,
+          savings: s.savings.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+        })),
+      addToSavings: (id, amount) =>
+        setState((s) => ({
+          ...s,
+          savings: s.savings.map((x) =>
+            x.id === id ? { ...x, current: Math.max(0, x.current + amount) } : x,
+          ),
+        })),
+      removeSavingsGoal: (id) =>
+        setState((s) => ({ ...s, savings: s.savings.filter((x) => x.id !== id) })),
+      setAlinma: (patch) =>
+        setState((s) => ({ ...s, alinma: { ...s.alinma, ...patch } })),
+      payAlinmaInstallment: () =>
+        setState((s) => ({
+          ...s,
+          alinma: {
+            ...s.alinma,
+            monthsPaid: Math.min(s.alinma.monthsTotal, s.alinma.monthsPaid + 1),
+          },
+        })),
     }),
     [state],
   );
