@@ -45,6 +45,29 @@ export type WellnessState = {
 
 export type Theme = "light" | "dark";
 
+export type BudgetSplit = {
+  needs: number;
+  wants: number;
+  savings: number;
+};
+
+export type SavingsGoal = {
+  id: string;
+  name: string;
+  target: number;
+  current: number;
+  notes?: string;
+};
+
+export type AlinmaLoan = {
+  totalAmount: number;
+  monthlyInstallment: number;
+  monthsTotal: number;
+  monthsPaid: number;
+  startDate?: string;
+  notes?: string;
+};
+
 type State = {
   income: number;
   urgent: UrgentExpense[];
@@ -52,6 +75,9 @@ type State = {
   debts: Debt[];
   wellness: WellnessState;
   theme: Theme;
+  budgetSplit: BudgetSplit;
+  savings: SavingsGoal[];
+  alinma: AlinmaLoan;
 };
 
 type Ctx = State & {
@@ -68,6 +94,13 @@ type Ctx = State & {
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: "meals" | "skinCare" | "hairCare" | "habits", id: string) => void;
   toggleTheme: () => void;
+  setBudgetSplit: (patch: Partial<BudgetSplit>) => void;
+  addSavingsGoal: (g: Omit<SavingsGoal, "id" | "current"> & { current?: number }) => void;
+  updateSavingsGoal: (id: string, patch: Partial<SavingsGoal>) => void;
+  addToSavings: (id: string, amount: number) => void;
+  removeSavingsGoal: (id: string) => void;
+  setAlinma: (patch: Partial<AlinmaLoan>) => void;
+  payAlinmaInstallment: () => void;
 };
 
 const STORAGE_KEY = "monazem-masareefi-v1";
@@ -121,6 +154,17 @@ const defaultState: State = {
   ],
   wellness: defaultWellness,
   theme: "light",
+  budgetSplit: { needs: 50, wants: 30, savings: 20 },
+  savings: [
+    { id: "sv1", name: "صندوق الطوارئ", target: 5000, current: 1200 },
+    { id: "sv2", name: "رحلة صيفية", target: 3000, current: 500 },
+  ],
+  alinma: {
+    totalAmount: 0,
+    monthlyInstallment: 0,
+    monthsTotal: 0,
+    monthsPaid: 0,
+  },
 };
 
 const StoreContext = createContext<Ctx | null>(null);
@@ -223,6 +267,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
       toggleTheme: () =>
         setState((s) => ({ ...s, theme: s.theme === "dark" ? "light" : "dark" })),
+      setBudgetSplit: (patch) =>
+        setState((s) => ({ ...s, budgetSplit: { ...s.budgetSplit, ...patch } })),
+      addSavingsGoal: (g) =>
+        setState((s) => ({
+          ...s,
+          savings: [{ id: uid(), current: g.current ?? 0, ...g }, ...s.savings],
+        })),
+      updateSavingsGoal: (id, patch) =>
+        setState((s) => ({
+          ...s,
+          savings: s.savings.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+        })),
+      addToSavings: (id, amount) =>
+        setState((s) => ({
+          ...s,
+          savings: s.savings.map((x) =>
+            x.id === id ? { ...x, current: Math.max(0, x.current + amount) } : x,
+          ),
+        })),
+      removeSavingsGoal: (id) =>
+        setState((s) => ({ ...s, savings: s.savings.filter((x) => x.id !== id) })),
+      setAlinma: (patch) =>
+        setState((s) => ({ ...s, alinma: { ...s.alinma, ...patch } })),
+      payAlinmaInstallment: () =>
+        setState((s) => ({
+          ...s,
+          alinma: {
+            ...s.alinma,
+            monthsPaid: Math.min(s.alinma.monthsTotal, s.alinma.monthsPaid + 1),
+          },
+        })),
     }),
     [state],
   );

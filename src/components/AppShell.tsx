@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Wallet, Clock, HandCoins, Heart, BarChart3, Moon, Sun, Settings } from "lucide-react";
+import { Home, Wallet, Clock, HandCoins, Heart, BarChart3, Moon, Sun, Settings, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { useStore } from "@/lib/store";
 
@@ -29,6 +29,13 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
             {subtitle && <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to="/planner"
+              className="grid h-10 w-10 place-items-center rounded-full bg-card/80 text-foreground/70 transition hover:text-foreground"
+              aria-label="التخطيط الذكي"
+            >
+              <Sparkles className="h-5 w-5" />
+            </Link>
             <Link
               to="/reports"
               className="grid h-10 w-10 place-items-center rounded-full bg-card/80 text-foreground/70 transition hover:text-foreground"
