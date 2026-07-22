@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 export type UrgentExpense = {
   id: string;
@@ -40,7 +41,8 @@ export type WellnessState = {
   habits: { id: string; label: string; done: boolean }[];
   sleepHours: number;
   mood: "great" | "good" | "meh" | "bad";
-  exerciseMinutes: number;
+  steps: number;
+  stepsGoal: number;
 };
 
 export type Theme = "light" | "dark";
@@ -68,6 +70,13 @@ export type AlinmaLoan = {
   notes?: string;
 };
 
+export type PlanItem = {
+  id: string;
+  category: string;
+  amount: number;
+  icon?: string;
+};
+
 type State = {
   income: number;
   urgent: UrgentExpense[];
@@ -78,6 +87,7 @@ type State = {
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
   alinma: AlinmaLoan;
+  monthlyPlan: PlanItem[];
 };
 
 type Ctx = State & {
@@ -101,9 +111,22 @@ type Ctx = State & {
   removeSavingsGoal: (id: string) => void;
   setAlinma: (patch: Partial<AlinmaLoan>) => void;
   payAlinmaInstallment: () => void;
+  addPlanItem: (p: Omit<PlanItem, "id">) => void;
+  updatePlanItem: (id: string, patch: Partial<PlanItem>) => void;
+  removePlanItem: (id: string) => void;
 };
 
 const STORAGE_KEY = "monazem-masareefi-v1";
+
+const encouragements = [
+  "أحسنت! خطوة ذكية نحو استقرارك المالي 💚",
+  "رائع! التزامك يصنع الفرق 🌱",
+  "ممتاز! كل سداد يقربك من هدفك ✨",
+  "أنت على الطريق الصحيح، استمر! 🚀",
+  "قرار موفق! ميزانيتك تشكرك 🙌",
+  "الالتزام هو سر النجاح المالي 💎",
+];
+const pickEncouragement = () => encouragements[Math.floor(Math.random() * encouragements.length)];
 
 const defaultWellness: WellnessState = {
   calorieTarget: 2000,
@@ -135,7 +158,8 @@ const defaultWellness: WellnessState = {
   ],
   sleepHours: 7,
   mood: "good",
-  exerciseMinutes: 0,
+  steps: 0,
+  stepsGoal: 8000,
 };
 
 const defaultState: State = {
@@ -165,6 +189,13 @@ const defaultState: State = {
     monthsTotal: 0,
     monthsPaid: 0,
   },
+  monthlyPlan: [
+    { id: "pl1", category: "سكن وإيجار", amount: 800, icon: "🏠" },
+    { id: "pl2", category: "طعام وبقالة", amount: 400, icon: "🛒" },
+    { id: "pl3", category: "مواصلات", amount: 200, icon: "⛽" },
+    { id: "pl4", category: "فواتير", amount: 150, icon: "💡" },
+    { id: "pl5", category: "ادخار", amount: 300, icon: "🏦" },
+  ],
 };
 
 const StoreContext = createContext<Ctx | null>(null);
@@ -181,6 +212,7 @@ function loadState(): State {
       ...defaultState,
       ...parsed,
       wellness: { ...defaultWellness, ...(parsed.wellness ?? {}) },
+      monthlyPlan: parsed.monthlyPlan ?? defaultState.monthlyPlan,
     };
   } catch {
     return defaultState;
@@ -214,15 +246,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setIncome: (n) => setState((s) => ({ ...s, income: Math.max(0, n) })),
       addUrgent: (e) => setState((s) => ({ ...s, urgent: [{ ...e, id: uid() }, ...s.urgent] })),
       updateUrgent: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          urgent: s.urgent.map((x) => (x.id === id ? { ...x, ...patch } : x)),
-        })),
+        setState((s) => {
+          const before = s.urgent.find((x) => x.id === id);
+          if (before && patch.paid === true && !before.paid) {
+            toast.success(pickEncouragement(), { description: `تم سداد: ${before.name}` });
+          }
+          return {
+            ...s,
+            urgent: s.urgent.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+          };
+        }),
       removeUrgent: (id) => setState((s) => ({ ...s, urgent: s.urgent.filter((x) => x.id !== id) })),
       addPostponable: (e) =>
         setState((s) => ({ ...s, postponable: [{ ...e, id: uid() }, ...s.postponable] })),
-      removePostponable: (id) =>
-        setState((s) => ({ ...s, postponable: s.postponable.filter((x) => x.id !== id) })),
+      removePostponable: (id) => {
+        setState((s) => {
+          const item = s.postponable.find((x) => x.id === id);
+          if (item) toast.success("قرار موفق! تخليت عن مصروف اختياري 💚", { description: item.name });
+          return { ...s, postponable: s.postponable.filter((x) => x.id !== id) };
+        });
+      },
       moveToUrgent: (id) =>
         setState((s) => {
           const item = s.postponable.find((x) => x.id === id);
@@ -246,14 +289,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addDebt: (d) =>
         setState((s) => ({ ...s, debts: [{ ...d, id: uid(), paid: false }, ...s.debts] })),
       payDebt: (id) =>
-        setState((s) => ({
-          ...s,
-          debts: s.debts.map((x) =>
-            x.id === id
-              ? { ...x, paid: true, paidDate: new Date().toISOString().slice(0, 10) }
-              : x,
-          ),
-        })),
+        setState((s) => {
+          const d = s.debts.find((x) => x.id === id);
+          if (d) toast.success("مبروك! دين أقل وراحة أكثر 🎉", { description: `تم سداد: ${d.creditor}` });
+          return {
+            ...s,
+            debts: s.debts.map((x) =>
+              x.id === id ? { ...x, paid: true, paidDate: new Date().toISOString().slice(0, 10) } : x,
+            ),
+          };
+        }),
       removeDebt: (id) => setState((s) => ({ ...s, debts: s.debts.filter((x) => x.id !== id) })),
       setWellness: (patch) =>
         setState((s) => ({ ...s, wellness: { ...s.wellness, ...patch } })),
@@ -279,25 +324,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           savings: s.savings.map((x) => (x.id === id ? { ...x, ...patch } : x)),
         })),
-      addToSavings: (id, amount) =>
-        setState((s) => ({
-          ...s,
-          savings: s.savings.map((x) =>
-            x.id === id ? { ...x, current: Math.max(0, x.current + amount) } : x,
-          ),
-        })),
+      addToSavings: (id, amount) => {
+        setState((s) => {
+          if (amount > 0) {
+            const g = s.savings.find((x) => x.id === id);
+            if (g) toast.success("ادخار موفق! 🏦", { description: `${g.name} — أضفت ${amount} ر.س` });
+          }
+          return {
+            ...s,
+            savings: s.savings.map((x) =>
+              x.id === id ? { ...x, current: Math.max(0, x.current + amount) } : x,
+            ),
+          };
+        });
+      },
       removeSavingsGoal: (id) =>
         setState((s) => ({ ...s, savings: s.savings.filter((x) => x.id !== id) })),
       setAlinma: (patch) =>
         setState((s) => ({ ...s, alinma: { ...s.alinma, ...patch } })),
       payAlinmaInstallment: () =>
+        setState((s) => {
+          const next = Math.min(s.alinma.monthsTotal, s.alinma.monthsPaid + 1);
+          if (next > s.alinma.monthsPaid) {
+            const left = s.alinma.monthsTotal - next;
+            toast.success("قسط جديد مسدد! 💪", {
+              description: left === 0 ? "مبروك! انتهت السلفة كاملة 🎊" : `متبقي ${left} قسطًا`,
+            });
+          }
+          return { ...s, alinma: { ...s.alinma, monthsPaid: next } };
+        }),
+      addPlanItem: (p) =>
+        setState((s) => ({ ...s, monthlyPlan: [...s.monthlyPlan, { ...p, id: uid() }] })),
+      updatePlanItem: (id, patch) =>
         setState((s) => ({
           ...s,
-          alinma: {
-            ...s.alinma,
-            monthsPaid: Math.min(s.alinma.monthsTotal, s.alinma.monthsPaid + 1),
-          },
+          monthlyPlan: s.monthlyPlan.map((x) => (x.id === id ? { ...x, ...patch } : x)),
         })),
+      removePlanItem: (id) =>
+        setState((s) => ({ ...s, monthlyPlan: s.monthlyPlan.filter((x) => x.id !== id) })),
     }),
     [state],
   );

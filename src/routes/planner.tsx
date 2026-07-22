@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Banknote, Building2, Minus, PiggyBank, Plus, Sparkles, Target, Trash2, Wallet } from "lucide-react";
+import { Banknote, Building2, ClipboardList, Minus, PiggyBank, Plus, Sparkles, Target, Trash2, Wallet } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, useStore } from "@/lib/store";
 import { Input } from "./urgent";
@@ -22,6 +22,7 @@ function PlannerPage() {
     income, budgetSplit, setBudgetSplit,
     savings, addSavingsGoal, addToSavings, removeSavingsGoal,
     alinma, setAlinma, payAlinmaInstallment,
+    monthlyPlan, addPlanItem, updatePlanItem, removePlanItem,
   } = useStore();
 
   const total = budgetSplit.needs + budgetSplit.wants + budgetSplit.savings;
@@ -91,6 +92,15 @@ function PlannerPage() {
         )}
       </Card>
 
+      {/* Monthly Plan */}
+      <MonthlyPlanSection
+        items={monthlyPlan}
+        income={income}
+        onAdd={addPlanItem}
+        onUpdate={updatePlanItem}
+        onRemove={removePlanItem}
+      />
+
       {/* Savings */}
       <SavingsSection
         savings={savings}
@@ -107,6 +117,148 @@ function PlannerPage() {
         payInstallment={payAlinmaInstallment}
       />
     </AppShell>
+  );
+}
+
+function MonthlyPlanSection({
+  items, income, onAdd, onUpdate, onRemove,
+}: {
+  items: ReturnType<typeof useStore>["monthlyPlan"];
+  income: number;
+  onAdd: ReturnType<typeof useStore>["addPlanItem"];
+  onUpdate: ReturnType<typeof useStore>["updatePlanItem"];
+  onRemove: ReturnType<typeof useStore>["removePlanItem"];
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [category, setCategory] = useState("");
+  const [amount, setAmount] = useState("");
+  const [icon, setIcon] = useState("💰");
+
+  const planned = items.reduce((s, x) => s + x.amount, 0);
+  const remaining = income - planned;
+  const pct = Math.min(100, income > 0 ? Math.round((planned / income) * 100) : 0);
+  const over = planned > income;
+
+  const suggestions = ["🏠", "🛒", "⛽", "💡", "📱", "🏥", "🎓", "🏦", "☕", "👕", "🎁", "🚗"];
+
+  return (
+    <>
+      <SectionTitle
+        action={
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground shadow-soft"
+            aria-label="إضافة بند"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        }
+      >
+        خطة المصاريف الشهرية
+      </SectionTitle>
+
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/15 text-primary">
+            <ClipboardList className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">إجمالي المخطط</p>
+            <p className="text-lg font-bold">{formatSAR(planned)}</p>
+          </div>
+          <div className="text-left">
+            <p className="text-xs text-muted-foreground">{over ? "تجاوز" : "متبقي"}</p>
+            <p className={`text-sm font-semibold ${over ? "text-destructive" : "text-success"}`}>
+              {formatSAR(Math.abs(remaining))}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full transition-all ${over ? "bg-destructive" : "gradient-primary"}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className={`mt-2 text-center text-xs ${over ? "text-destructive" : "text-muted-foreground"}`}>
+          {over
+            ? `الخطة تتجاوز الدخل بمقدار ${formatSAR(-remaining)} — راجع البنود`
+            : `استخدمت ${pct}% من دخلك (${formatSAR(income)})`}
+        </p>
+      </Card>
+
+      {showForm && (
+        <Card className="mt-3 space-y-3">
+          <div>
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">أيقونة</span>
+            <div className="flex flex-wrap gap-1.5">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setIcon(s)}
+                  className={`grid h-9 w-9 place-items-center rounded-full text-lg transition ${
+                    icon === s ? "gradient-primary shadow-soft" : "bg-muted"
+                  }`}
+                >{s}</button>
+              ))}
+            </div>
+          </div>
+          <Input label="التصنيف" value={category} onChange={setCategory} placeholder="مثال: مواصلات" />
+          <Input label="المبلغ الشهري" value={amount} onChange={setAmount} type="number" placeholder="0" />
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => {
+                if (!category || !amount) return;
+                onAdd({ category, amount: Number(amount), icon });
+                setCategory(""); setAmount(""); setIcon("💰"); setShowForm(false);
+              }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >حفظ</button>
+            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
+      <div className="mt-3 space-y-2">
+        {items.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">لا توجد بنود في خطتك بعد.</p>
+        )}
+        {items.map((it) => {
+          const share = income > 0 ? Math.round((it.amount / income) * 100) : 0;
+          return (
+            <Card key={it.id} className="flex items-center gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-muted text-xl">
+                {it.icon ?? "💰"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate font-semibold">{it.category}</p>
+                  <p className="shrink-0 font-bold">{formatSAR(it.amount)}</p>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full gradient-primary" style={{ width: `${Math.min(100, share)}%` }} />
+                  </div>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{share}%</span>
+                </div>
+              </div>
+              <input
+                type="number"
+                value={it.amount}
+                onChange={(e) => onUpdate(it.id, { amount: Math.max(0, Number(e.target.value)) })}
+                className="w-16 shrink-0 rounded-full border border-border bg-input/50 px-2 py-1 text-center text-xs outline-none focus:border-primary"
+              />
+              <button
+                onClick={() => onRemove(it.id)}
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                aria-label="حذف"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </Card>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

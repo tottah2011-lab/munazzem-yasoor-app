@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, Droplets, Minus, Moon, Plus, Smile, Utensils, Weight } from "lucide-react";
+import { Activity, Droplets, Footprints, Minus, Moon, Plus, Smile, Utensils, Weight } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { useStore } from "@/lib/store";
 
@@ -80,14 +80,32 @@ function Wellness() {
           onChange={(v) => setWellness({ sleepHours: v })}
         />
         <NumberCard
-          icon={Activity}
-          label="الرياضة"
-          value={wellness.exerciseMinutes}
-          suffix="دقيقة"
-          step={5}
-          onChange={(v) => setWellness({ exerciseMinutes: v })}
+          icon={Footprints}
+          label={`الخطوات (هدف ${wellness.stepsGoal})`}
+          value={wellness.steps}
+          suffix="خطوة"
+          step={500}
+          onChange={(v) => setWellness({ steps: Math.max(0, Math.round(v)) })}
         />
       </div>
+
+      <Card className="mt-3">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/15 text-primary">
+            <Footprints className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">تقدّم الخطوات اليوم</p>
+            <p className="text-lg font-bold">{wellness.steps} / {wellness.stepsGoal}</p>
+          </div>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full gradient-primary transition-all"
+            style={{ width: `${Math.min(100, (wellness.steps / Math.max(wellness.stepsGoal, 1)) * 100)}%` }}
+          />
+        </div>
+      </Card>
 
       <SectionTitle>المزاج اليوم</SectionTitle>
       <Card>
