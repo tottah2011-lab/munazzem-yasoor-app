@@ -1,14 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Wallet, Clock, HandCoins, Heart, BarChart3, Moon, Sun, Settings, Sparkles } from "lucide-react";
+import { Home, Wallet, Heart, BarChart3, Moon, Sun, Settings, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { useStore } from "@/lib/store";
 
 const nav = [
   { to: "/", label: "الرئيسية", icon: Home },
-  { to: "/urgent", label: "عاجلة", icon: Wallet },
-  { to: "/postponable", label: "قابلة للتأجيل", icon: Clock },
-  { to: "/debts", label: "الديون", icon: HandCoins },
+  { to: "/expenses", label: "المصاريف", icon: Wallet },
+  { to: "/planner", label: "التخطيط", icon: Sparkles },
   { to: "/wellness", label: "العناية", icon: Heart },
+  { to: "/reports", label: "التقارير", icon: BarChart3 },
 ] as const;
 
 export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
