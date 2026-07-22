@@ -30,6 +30,13 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Link
+              to="/planner"
+              className="grid h-10 w-10 place-items-center rounded-full bg-card/80 text-foreground/70 transition hover:text-foreground"
+              aria-label="التخطيط الذكي"
+            >
+              <Sparkles className="h-5 w-5" />
+            </Link>
+            <Link
               to="/reports"
               className="grid h-10 w-10 place-items-center rounded-full bg-card/80 text-foreground/70 transition hover:text-foreground"
               aria-label="التقارير"
