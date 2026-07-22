@@ -147,6 +147,17 @@ const defaultState: State = {
   ],
   wellness: defaultWellness,
   theme: "light",
+  budgetSplit: { needs: 50, wants: 30, savings: 20 },
+  savings: [
+    { id: "sv1", name: "صندوق الطوارئ", target: 5000, current: 1200 },
+    { id: "sv2", name: "رحلة صيفية", target: 3000, current: 500 },
+  ],
+  alinma: {
+    totalAmount: 0,
+    monthlyInstallment: 0,
+    monthsTotal: 0,
+    monthsPaid: 0,
+  },
 };
 
 const StoreContext = createContext<Ctx | null>(null);
