@@ -9,8 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WellnessRouteImport } from './routes/wellness'
+import { Route as UrgentRouteImport } from './routes/urgent'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PostponableRouteImport } from './routes/postponable'
+import { Route as DebtsRouteImport } from './routes/debts'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WellnessRoute = WellnessRouteImport.update({
+  id: '/wellness',
+  path: '/wellness',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UrgentRoute = UrgentRouteImport.update({
+  id: '/urgent',
+  path: '/urgent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostponableRoute = PostponableRouteImport.update({
+  id: '/postponable',
+  path: '/postponable',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebtsRoute = DebtsRouteImport.update({
+  id: '/debts',
+  path: '/debts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +55,116 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/debts': typeof DebtsRoute
+  '/postponable': typeof PostponableRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/urgent': typeof UrgentRoute
+  '/wellness': typeof WellnessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/debts': typeof DebtsRoute
+  '/postponable': typeof PostponableRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/urgent': typeof UrgentRoute
+  '/wellness': typeof WellnessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/debts': typeof DebtsRoute
+  '/postponable': typeof PostponableRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/urgent': typeof UrgentRoute
+  '/wellness': typeof WellnessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/debts'
+    | '/postponable'
+    | '/reports'
+    | '/settings'
+    | '/urgent'
+    | '/wellness'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/debts'
+    | '/postponable'
+    | '/reports'
+    | '/settings'
+    | '/urgent'
+    | '/wellness'
+  id:
+    | '__root__'
+    | '/'
+    | '/debts'
+    | '/postponable'
+    | '/reports'
+    | '/settings'
+    | '/urgent'
+    | '/wellness'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DebtsRoute: typeof DebtsRoute
+  PostponableRoute: typeof PostponableRoute
+  ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
+  UrgentRoute: typeof UrgentRoute
+  WellnessRoute: typeof WellnessRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wellness': {
+      id: '/wellness'
+      path: '/wellness'
+      fullPath: '/wellness'
+      preLoaderRoute: typeof WellnessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/urgent': {
+      id: '/urgent'
+      path: '/urgent'
+      fullPath: '/urgent'
+      preLoaderRoute: typeof UrgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/postponable': {
+      id: '/postponable'
+      path: '/postponable'
+      fullPath: '/postponable'
+      preLoaderRoute: typeof PostponableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debts': {
+      id: '/debts'
+      path: '/debts'
+      fullPath: '/debts'
+      preLoaderRoute: typeof DebtsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,17 +177,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DebtsRoute: DebtsRoute,
+  PostponableRoute: PostponableRoute,
+  ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
+  UrgentRoute: UrgentRoute,
+  WellnessRoute: WellnessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
