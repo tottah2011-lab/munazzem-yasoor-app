@@ -45,6 +45,29 @@ export type WellnessState = {
 
 export type Theme = "light" | "dark";
 
+export type BudgetSplit = {
+  needs: number;
+  wants: number;
+  savings: number;
+};
+
+export type SavingsGoal = {
+  id: string;
+  name: string;
+  target: number;
+  current: number;
+  notes?: string;
+};
+
+export type AlinmaLoan = {
+  totalAmount: number;
+  monthlyInstallment: number;
+  monthsTotal: number;
+  monthsPaid: number;
+  startDate?: string;
+  notes?: string;
+};
+
 type State = {
   income: number;
   urgent: UrgentExpense[];
@@ -52,6 +75,9 @@ type State = {
   debts: Debt[];
   wellness: WellnessState;
   theme: Theme;
+  budgetSplit: BudgetSplit;
+  savings: SavingsGoal[];
+  alinma: AlinmaLoan;
 };
 
 type Ctx = State & {
