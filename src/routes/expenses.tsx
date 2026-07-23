@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  ArrowUp, Check, Clock, HandCoins, Plus, Search, Trash2, Wallet, Sparkles,
+  ArrowUp, Banknote, CalendarClock, Check, Clock, HandCoins, Plus, Search, Trash2, Wallet, Sparkles,
 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, useStore } from "@/lib/store";
-import { ExpenseForm, Input } from "./urgent";
+import { Input } from "./urgent";
 
 export const Route = createFileRoute("/expenses")({
   head: () => ({
@@ -32,11 +32,15 @@ function ExpensesPage() {
   const [tab, setTab] = useState<Tab>("urgent");
   const [showForm, setShowForm] = useState(false);
 
+  const urgentTotal = s.urgent.reduce((a, b) => a + b.amount, 0);
   const urgentUnpaid = s.urgent.filter((x) => !x.paid).reduce((a, b) => a + b.amount, 0);
-  const urgentPaid = s.urgent.filter((x) => x.paid).reduce((a, b) => a + b.amount, 0);
+  const urgentPaid = urgentTotal - urgentUnpaid;
   const postTotal = s.postponable.reduce((a, b) => a + b.amount, 0);
   const debtUnpaid = s.debts.filter((x) => !x.paid).reduce((a, b) => a + b.amount, 0);
   const debtPaid = s.debts.filter((x) => x.paid).reduce((a, b) => a + b.amount, 0);
+
+  const installments = s.urgent.filter((x) => x.installment && x.installment.monthsTotal > 0);
+  const installmentMonthly = installments.reduce((a, b) => a + b.amount, 0);
 
   const allPaidUrgent = s.urgent.length > 0 && s.urgent.every((x) => x.paid);
   const allPaidDebts = s.debts.length > 0 && s.debts.every((x) => x.paid);
@@ -57,7 +61,6 @@ function ExpensesPage() {
 
   return (
     <AppShell title="المصاريف والديون" subtitle="كل شيء في مكان واحد">
-      {/* Encouragement banner */}
       <Card className="flex items-center gap-3 border border-success/20 bg-success/5">
         <div className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
           <Sparkles className="h-5 w-5" />
@@ -65,14 +68,34 @@ function ExpensesPage() {
         <p className="text-sm font-medium leading-relaxed">{encourage}</p>
       </Card>
 
-      {/* Quick stats */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <MiniStat label="عاجلة متبقية" value={formatSAR(urgentUnpaid)} tone="text-warning" />
+      {/* Hero total for urgent */}
+      <div className="mt-4 relative overflow-hidden rounded-3xl gradient-primary p-5 text-primary-foreground shadow-soft">
+        <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+        <p className="text-xs opacity-90">إجمالي المصاريف العاجلة</p>
+        <p className="mt-1 text-3xl font-black tracking-tight">{formatSAR(urgentTotal)}</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+          <div className="rounded-2xl bg-white/15 p-2 text-center">
+            <p className="opacity-80">مدفوع</p>
+            <p className="mt-0.5 font-bold">{formatSAR(urgentPaid)}</p>
+          </div>
+          <div className="rounded-2xl bg-white/15 p-2 text-center">
+            <p className="opacity-80">متبقي</p>
+            <p className="mt-0.5 font-bold">{formatSAR(urgentUnpaid)}</p>
+          </div>
+        </div>
+        {installments.length > 0 && (
+          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-white/15 p-2.5 text-[11px]">
+            <CalendarClock className="h-4 w-4" />
+            <span>لديك {installments.length} تقسيط شهري بمجموع {formatSAR(installmentMonthly)}/شهر</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <MiniStat label="اختيارية" value={formatSAR(postTotal)} tone="text-info" />
         <MiniStat label="ديون" value={formatSAR(debtUnpaid)} tone="text-destructive" />
       </div>
 
-      {/* Icon tabs */}
       <div className="mt-5 grid grid-cols-3 gap-2">
         {tabs.map((t) => {
           const active = tab === t.key;
@@ -104,7 +127,7 @@ function ExpensesPage() {
       </button>
 
       {tab === "urgent" && (
-        <UrgentSection showForm={showForm} setShowForm={setShowForm} paidTotal={urgentPaid} />
+        <UrgentSection showForm={showForm} setShowForm={setShowForm} />
       )}
       {tab === "postponable" && (
         <PostSection showForm={showForm} setShowForm={setShowForm} />
@@ -126,22 +149,23 @@ function MiniStat({ label, value, tone = "" }: { label: string; value: string; t
 }
 
 function UrgentSection({
-  showForm, setShowForm, paidTotal,
-}: { showForm: boolean; setShowForm: (v: boolean) => void; paidTotal: number }) {
-  const { urgent, addUrgent, updateUrgent, removeUrgent } = useStore();
+  showForm, setShowForm,
+}: { showForm: boolean; setShowForm: (v: boolean) => void }) {
+  const { urgent, addUrgent, updateUrgent, removeUrgent, payInstallmentMonth } = useStore();
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<"all" | "paid" | "unpaid">("all");
+  const [filter, setFilter] = useState<"all" | "paid" | "unpaid" | "installment">("all");
 
   const filtered = urgent.filter((e) => {
     if (filter === "paid" && !e.paid) return false;
     if (filter === "unpaid" && e.paid) return false;
+    if (filter === "installment" && !e.installment) return false;
     return e.name.includes(q);
   });
 
   return (
     <>
       {showForm && (
-        <ExpenseForm
+        <UrgentForm
           onSubmit={(v) => { addUrgent(v); setShowForm(false); }}
           onCancel={() => setShowForm(false)}
         />
@@ -159,8 +183,8 @@ function UrgentSection({
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2 text-xs">
-        {(["all", "unpaid", "paid"] as const).map((f) => (
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        {(["all", "unpaid", "paid", "installment"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -168,45 +192,193 @@ function UrgentSection({
               filter === f ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
-            {f === "all" ? "الكل" : f === "paid" ? "مدفوعة" : "غير مدفوعة"}
+            {f === "all" ? "الكل" : f === "paid" ? "مدفوعة" : f === "unpaid" ? "غير مدفوعة" : "تقسيط"}
           </button>
         ))}
       </div>
-
-      <p className="mt-2 text-[11px] text-muted-foreground">مدفوع: {formatSAR(paidTotal)}</p>
 
       <div className="mt-3 space-y-2">
         {filtered.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">لا توجد عناصر.</p>
         )}
-        {filtered.map((e) => (
-          <Card key={e.id} className="flex items-center gap-3">
-            <button
-              onClick={() => updateUrgent(e.id, { paid: !e.paid })}
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition ${
-                e.paid ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
-              }`}
-              aria-label="تبديل الدفع"
-            >
-              <Check className="h-5 w-5" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className={`truncate font-semibold ${e.paid ? "line-through opacity-60" : ""}`}>{e.name}</p>
-                <p className="shrink-0 font-bold">{formatSAR(e.amount)}</p>
+        {filtered.map((e) => {
+          const inst = e.installment;
+          const hasInst = inst && inst.monthsTotal > 0;
+          const remainingMonths = hasInst ? Math.max(0, inst!.monthsTotal - inst!.monthsPaid) : 0;
+          const paidAmount = hasInst ? inst!.monthsPaid * e.amount : 0;
+          const totalAmount = hasInst ? inst!.monthsTotal * e.amount : e.amount;
+          const pct = hasInst ? Math.round((inst!.monthsPaid / inst!.monthsTotal) * 100) : 0;
+          return (
+            <Card key={e.id}>
+              <div className="flex items-center gap-3">
+                {!hasInst && (
+                  <button
+                    onClick={() => updateUrgent(e.id, { paid: !e.paid })}
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition ${
+                      e.paid ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
+                    }`}
+                    aria-label="تبديل الدفع"
+                  >
+                    <Check className="h-5 w-5" />
+                  </button>
+                )}
+                {hasInst && (
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-info/15 text-info">
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`truncate font-semibold ${e.paid && !hasInst ? "line-through opacity-60" : ""}`}>
+                      {e.name}
+                    </p>
+                    <p className="shrink-0 font-bold">
+                      {formatSAR(e.amount)}
+                      {hasInst && <span className="text-[10px] font-normal text-muted-foreground">/شهر</span>}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {e.category && <span className="ml-2">{e.category} ·</span>}
+                    يستحق {e.dueDate}
+                  </p>
+                </div>
+                <button
+                  onClick={() => removeUrgent(e.id)}
+                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                  aria-label="حذف"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {e.category && <span className="ml-2">{e.category} ·</span>}
-                يستحق {e.dueDate}
-              </p>
-            </div>
-            <button onClick={() => removeUrgent(e.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </Card>
-        ))}
+
+              {hasInst && (
+                <div className="mt-3 rounded-2xl bg-info/5 border border-info/15 p-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      قسط {inst!.monthsPaid} من {inst!.monthsTotal}
+                    </span>
+                    <span className="font-bold text-info">{pct}%</span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-info transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="rounded-xl bg-background/60 p-2 text-center">
+                      <p className="text-muted-foreground">مسدد</p>
+                      <p className="font-bold text-success">{formatSAR(paidAmount)}</p>
+                    </div>
+                    <div className="rounded-xl bg-background/60 p-2 text-center">
+                      <p className="text-muted-foreground">متبقي</p>
+                      <p className="font-bold text-warning">{formatSAR(totalAmount - paidAmount)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => payInstallmentMonth(e.id)}
+                    disabled={remainingMonths === 0}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full gradient-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    <Banknote className="h-3.5 w-3.5" />
+                    {remainingMonths === 0 ? "اكتمل التقسيط 🎉" : "تسجيل قسط هذا الشهر"}
+                  </button>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </>
+  );
+}
+
+function UrgentForm({
+  onSubmit, onCancel,
+}: {
+  onSubmit: (v: {
+    name: string; amount: number; dueDate: string; paid: boolean;
+    notes?: string; category?: string;
+    installment?: { monthsTotal: number; monthsPaid: number };
+  }) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
+  const [category, setCategory] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isInstallment, setIsInstallment] = useState(false);
+  const [months, setMonths] = useState("");
+  const [paidMonths, setPaidMonths] = useState("0");
+
+  const monthlyN = Number(amount) || 0;
+  const monthsN = Number(months) || 0;
+  const total = monthlyN * monthsN;
+
+  return (
+    <Card className="mt-4 space-y-3">
+      <Input label="الاسم" value={name} onChange={setName} placeholder="مثال: الإيجار / سلفة السيارة" />
+      <Input
+        label={isInstallment ? "القسط الشهري" : "المبلغ"}
+        value={amount}
+        onChange={setAmount}
+        type="number"
+        placeholder="0"
+      />
+      <Input label="تاريخ الاستحقاق" value={dueDate} onChange={setDueDate} type="date" />
+      <Input label="التصنيف" value={category} onChange={setCategory} placeholder="فواتير، سكن..." />
+
+      <div className="rounded-2xl border border-border p-3">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={isInstallment}
+            onChange={(e) => setIsInstallment(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+          <CalendarClock className="h-4 w-4 text-info" />
+          هذا المصروف مقسّط على عدة أشهر
+        </label>
+
+        {isInstallment && (
+          <div className="mt-3 space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Input label="عدد الأشهر" value={months} onChange={setMonths} type="number" placeholder="12" />
+              <Input label="المسدد سابقًا" value={paidMonths} onChange={setPaidMonths} type="number" placeholder="0" />
+            </div>
+            {total > 0 && (
+              <div className="rounded-xl bg-info/10 p-2.5 text-center text-xs">
+                <p className="text-muted-foreground">إجمالي التقسيط</p>
+                <p className="mt-0.5 font-bold text-info">{formatSAR(total)}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <Input label="ملاحظات" value={notes} onChange={setNotes} placeholder="اختياري" />
+
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={() => {
+            if (!name || !amount) return;
+            onSubmit({
+              name,
+              amount: monthlyN,
+              dueDate,
+              paid: false,
+              notes: notes || undefined,
+              category: category || undefined,
+              installment: isInstallment && monthsN > 0
+                ? { monthsTotal: monthsN, monthsPaid: Math.min(monthsN, Number(paidMonths) || 0) }
+                : undefined,
+            });
+          }}
+          className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+        >
+          حفظ
+        </button>
+        <button onClick={onCancel} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+      </div>
+    </Card>
   );
 }
 

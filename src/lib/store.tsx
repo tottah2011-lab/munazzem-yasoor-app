@@ -4,11 +4,15 @@ import { toast } from "sonner";
 export type UrgentExpense = {
   id: string;
   name: string;
-  amount: number;
+  amount: number; // monthly amount (or single-payment amount)
   dueDate: string;
   paid: boolean;
   notes?: string;
   category?: string;
+  installment?: {
+    monthsTotal: number;
+    monthsPaid: number;
+  };
 };
 
 export type PostponableExpense = {
@@ -29,16 +33,20 @@ export type Debt = {
   paidDate?: string;
 };
 
+export type WellnessItem = { id: string; label: string; done: boolean };
+
+export type WellnessListKey = "meals" | "skinCare" | "hairCare" | "habits";
+
 export type WellnessState = {
   calorieTarget: number;
   waterCups: number;
   waterGoal: number;
   weightKg: number;
   weightHistory: { date: string; kg: number }[];
-  meals: { id: string; label: string; done: boolean }[];
-  skinCare: { id: string; label: string; done: boolean }[];
-  hairCare: { id: string; label: string; done: boolean }[];
-  habits: { id: string; label: string; done: boolean }[];
+  meals: WellnessItem[];
+  skinCare: WellnessItem[];
+  hairCare: WellnessItem[];
+  habits: WellnessItem[];
   sleepHours: number;
   mood: "great" | "good" | "meh" | "bad";
   steps: number;
@@ -61,19 +69,11 @@ export type SavingsGoal = {
   notes?: string;
 };
 
-export type AlinmaLoan = {
-  totalAmount: number;
-  monthlyInstallment: number;
-  monthsTotal: number;
-  monthsPaid: number;
-  startDate?: string;
-  notes?: string;
-};
-
 export type PlanItem = {
   id: string;
   category: string;
-  amount: number;
+  amount: number; // monthly budget
+  spent: number; // used so far this month
   icon?: string;
 };
 
@@ -86,7 +86,6 @@ type State = {
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
-  alinma: AlinmaLoan;
   monthlyPlan: PlanItem[];
 };
 
@@ -95,6 +94,7 @@ type Ctx = State & {
   addUrgent: (e: Omit<UrgentExpense, "id">) => void;
   updateUrgent: (id: string, patch: Partial<UrgentExpense>) => void;
   removeUrgent: (id: string) => void;
+  payInstallmentMonth: (id: string) => void;
   addPostponable: (e: Omit<PostponableExpense, "id">) => void;
   removePostponable: (id: string) => void;
   moveToUrgent: (id: string) => void;
@@ -102,17 +102,20 @@ type Ctx = State & {
   payDebt: (id: string) => void;
   removeDebt: (id: string) => void;
   setWellness: (patch: Partial<WellnessState>) => void;
-  toggleWellnessItem: (list: "meals" | "skinCare" | "hairCare" | "habits", id: string) => void;
+  toggleWellnessItem: (list: WellnessListKey, id: string) => void;
+  addWellnessItem: (list: WellnessListKey, label: string) => void;
+  renameWellnessItem: (list: WellnessListKey, id: string, label: string) => void;
+  removeWellnessItem: (list: WellnessListKey, id: string) => void;
   toggleTheme: () => void;
   setBudgetSplit: (patch: Partial<BudgetSplit>) => void;
   addSavingsGoal: (g: Omit<SavingsGoal, "id" | "current"> & { current?: number }) => void;
   updateSavingsGoal: (id: string, patch: Partial<SavingsGoal>) => void;
   addToSavings: (id: string, amount: number) => void;
   removeSavingsGoal: (id: string) => void;
-  setAlinma: (patch: Partial<AlinmaLoan>) => void;
-  payAlinmaInstallment: () => void;
-  addPlanItem: (p: Omit<PlanItem, "id">) => void;
+  addPlanItem: (p: Omit<PlanItem, "id" | "spent"> & { spent?: number }) => void;
   updatePlanItem: (id: string, patch: Partial<PlanItem>) => void;
+  spendOnPlan: (id: string, amount: number) => void;
+  resetPlanSpent: (id: string) => void;
   removePlanItem: (id: string) => void;
 };
 
@@ -142,7 +145,6 @@ const defaultWellness: WellnessState = {
   ],
   skinCare: [
     { id: "s1", label: "غسول الوجه", done: false },
-    { id: "s2", label: "تونر", done: false },
     { id: "s3", label: "مرطب", done: false },
     { id: "s4", label: "واقي شمس", done: false },
   ],
@@ -183,18 +185,12 @@ const defaultState: State = {
     { id: "sv1", name: "صندوق الطوارئ", target: 5000, current: 1200 },
     { id: "sv2", name: "رحلة صيفية", target: 3000, current: 500 },
   ],
-  alinma: {
-    totalAmount: 0,
-    monthlyInstallment: 0,
-    monthsTotal: 0,
-    monthsPaid: 0,
-  },
   monthlyPlan: [
-    { id: "pl1", category: "سكن وإيجار", amount: 800, icon: "🏠" },
-    { id: "pl2", category: "طعام وبقالة", amount: 400, icon: "🛒" },
-    { id: "pl3", category: "مواصلات", amount: 200, icon: "⛽" },
-    { id: "pl4", category: "فواتير", amount: 150, icon: "💡" },
-    { id: "pl5", category: "ادخار", amount: 300, icon: "🏦" },
+    { id: "pl1", category: "سكن وإيجار", amount: 800, spent: 0, icon: "🏠" },
+    { id: "pl2", category: "طعام وبقالة", amount: 400, spent: 0, icon: "🛒" },
+    { id: "pl3", category: "مواصلات", amount: 200, spent: 0, icon: "⛽" },
+    { id: "pl4", category: "قهوة", amount: 120, spent: 0, icon: "☕" },
+    { id: "pl5", category: "ادخار", amount: 300, spent: 0, icon: "🏦" },
   ],
 };
 
@@ -212,7 +208,10 @@ function loadState(): State {
       ...defaultState,
       ...parsed,
       wellness: { ...defaultWellness, ...(parsed.wellness ?? {}) },
-      monthlyPlan: parsed.monthlyPlan ?? defaultState.monthlyPlan,
+      monthlyPlan: (parsed.monthlyPlan ?? defaultState.monthlyPlan).map((p: PlanItem) => ({
+        ...p,
+        spent: p.spent ?? 0,
+      })),
     };
   } catch {
     return defaultState;
@@ -257,6 +256,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           };
         }),
       removeUrgent: (id) => setState((s) => ({ ...s, urgent: s.urgent.filter((x) => x.id !== id) })),
+      payInstallmentMonth: (id) =>
+        setState((s) => ({
+          ...s,
+          urgent: s.urgent.map((x) => {
+            if (x.id !== id || !x.installment) return x;
+            const next = Math.min(x.installment.monthsTotal, x.installment.monthsPaid + 1);
+            if (next > x.installment.monthsPaid) {
+              const left = x.installment.monthsTotal - next;
+              toast.success("قسط جديد مسدد! 💪", {
+                description: left === 0 ? `مبروك! انتهى التقسيط: ${x.name} 🎊` : `${x.name} — متبقي ${left} قسطًا`,
+              });
+            }
+            return { ...x, installment: { ...x.installment, monthsPaid: next } };
+          }),
+        })),
       addPostponable: (e) =>
         setState((s) => ({ ...s, postponable: [{ ...e, id: uid() }, ...s.postponable] })),
       removePostponable: (id) => {
@@ -310,6 +324,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => (x.id === id ? { ...x, done: !x.done } : x)),
           },
         })),
+      addWellnessItem: (list, label) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: [...s.wellness[list], { id: uid(), label, done: false }],
+          },
+        })),
+      renameWellnessItem: (list, id, label) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) => (x.id === id ? { ...x, label } : x)),
+          },
+        })),
+      removeWellnessItem: (list, id) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].filter((x) => x.id !== id),
+          },
+        })),
       toggleTheme: () =>
         setState((s) => ({ ...s, theme: s.theme === "dark" ? "light" : "dark" })),
       setBudgetSplit: (patch) =>
@@ -340,25 +378,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       removeSavingsGoal: (id) =>
         setState((s) => ({ ...s, savings: s.savings.filter((x) => x.id !== id) })),
-      setAlinma: (patch) =>
-        setState((s) => ({ ...s, alinma: { ...s.alinma, ...patch } })),
-      payAlinmaInstallment: () =>
-        setState((s) => {
-          const next = Math.min(s.alinma.monthsTotal, s.alinma.monthsPaid + 1);
-          if (next > s.alinma.monthsPaid) {
-            const left = s.alinma.monthsTotal - next;
-            toast.success("قسط جديد مسدد! 💪", {
-              description: left === 0 ? "مبروك! انتهت السلفة كاملة 🎊" : `متبقي ${left} قسطًا`,
-            });
-          }
-          return { ...s, alinma: { ...s.alinma, monthsPaid: next } };
-        }),
       addPlanItem: (p) =>
-        setState((s) => ({ ...s, monthlyPlan: [...s.monthlyPlan, { ...p, id: uid() }] })),
+        setState((s) => ({ ...s, monthlyPlan: [...s.monthlyPlan, { ...p, spent: p.spent ?? 0, id: uid() }] })),
       updatePlanItem: (id, patch) =>
         setState((s) => ({
           ...s,
           monthlyPlan: s.monthlyPlan.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+        })),
+      spendOnPlan: (id, amount) =>
+        setState((s) => {
+          const item = s.monthlyPlan.find((x) => x.id === id);
+          if (item && amount > 0) {
+            const newSpent = item.spent + amount;
+            const remaining = item.amount - newSpent;
+            if (remaining < 0) {
+              toast.warning(`${item.icon ?? ""} ${item.category}`, {
+                description: `تجاوزت الميزانية بمقدار ${Math.abs(remaining)} ر.س`,
+              });
+            } else {
+              toast.success(`${item.icon ?? ""} ${item.category}`, {
+                description: `صرفت ${amount} ر.س — متبقي ${remaining} ر.س`,
+              });
+            }
+          }
+          return {
+            ...s,
+            monthlyPlan: s.monthlyPlan.map((x) =>
+              x.id === id ? { ...x, spent: Math.max(0, x.spent + amount) } : x,
+            ),
+          };
+        }),
+      resetPlanSpent: (id) =>
+        setState((s) => ({
+          ...s,
+          monthlyPlan: s.monthlyPlan.map((x) => (x.id === id ? { ...x, spent: 0 } : x)),
         })),
       removePlanItem: (id) =>
         setState((s) => ({ ...s, monthlyPlan: s.monthlyPlan.filter((x) => x.id !== id) })),
