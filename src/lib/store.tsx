@@ -379,7 +379,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeSavingsGoal: (id) =>
         setState((s) => ({ ...s, savings: s.savings.filter((x) => x.id !== id) })),
       addPlanItem: (p) =>
-        setState((s) => ({ ...s, monthlyPlan: [...s.monthlyPlan, { spent: 0, ...p, id: uid() }] })),
+        setState((s) => ({ ...s, monthlyPlan: [...s.monthlyPlan, { spent: 0, ...p, id: uid() } as PlanItem] })),
       updatePlanItem: (id, patch) =>
         setState((s) => ({
           ...s,
