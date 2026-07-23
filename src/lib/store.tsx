@@ -209,8 +209,8 @@ function loadState(): State {
       ...parsed,
       wellness: { ...defaultWellness, ...(parsed.wellness ?? {}) },
       monthlyPlan: (parsed.monthlyPlan ?? defaultState.monthlyPlan).map((p: PlanItem) => ({
-        spent: 0,
         ...p,
+        spent: p.spent ?? 0,
       })),
     };
   } catch {
