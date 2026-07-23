@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, Droplets, Footprints, Minus, Moon, Plus, Smile, Utensils, Weight } from "lucide-react";
+import { useState } from "react";
+import { Activity, Check, Droplets, Footprints, Minus, Moon, Pencil, Plus, Smile, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { useStore } from "@/lib/store";
+import { useStore, type WellnessListKey, type WellnessItem } from "@/lib/store";
 
 export const Route = createFileRoute("/wellness")({
   head: () => ({
