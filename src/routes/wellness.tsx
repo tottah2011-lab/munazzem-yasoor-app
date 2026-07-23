@@ -126,10 +126,22 @@ function Wellness() {
         </div>
       </Card>
 
-      <ChecklistSection title="وجبات صحية" icon={Utensils} items={wellness.meals} onToggle={(id) => toggleWellnessItem("meals", id)} />
-      <ChecklistSection title="العناية بالبشرة" icon={Smile} items={wellness.skinCare} onToggle={(id) => toggleWellnessItem("skinCare", id)} />
-      <ChecklistSection title="العناية بالشعر" icon={Smile} items={wellness.hairCare} onToggle={(id) => toggleWellnessItem("hairCare", id)} />
-      <ChecklistSection title="عادات يومية" icon={Activity} items={wellness.habits} onToggle={(id) => toggleWellnessItem("habits", id)} />
+      <ChecklistSection
+        title="وجبات صحية" icon={Utensils} listKey="meals" items={wellness.meals}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
+      />
+      <ChecklistSection
+        title="العناية بالبشرة" icon={Smile} listKey="skinCare" items={wellness.skinCare}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
+      />
+      <ChecklistSection
+        title="العناية بالشعر" icon={Smile} listKey="hairCare" items={wellness.hairCare}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
+      />
+      <ChecklistSection
+        title="عادات يومية" icon={Activity} listKey="habits" items={wellness.habits}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
+      />
     </AppShell>
   );
 }
@@ -159,12 +171,49 @@ function NumberCard({
 }
 
 function ChecklistSection({
-  title, icon: Icon, items, onToggle,
-}: { title: string; icon: typeof Utensils; items: { id: string; label: string; done: boolean }[]; onToggle: (id: string) => void }) {
+  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove,
+}: {
+  title: string;
+  icon: typeof Utensils;
+  listKey: WellnessListKey;
+  items: WellnessItem[];
+  onToggle: (list: WellnessListKey, id: string) => void;
+  onAdd: (list: WellnessListKey, label: string) => void;
+  onRename: (list: WellnessListKey, id: string, label: string) => void;
+  onRemove: (list: WellnessListKey, id: string) => void;
+}) {
   const done = items.filter((i) => i.done).length;
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+
+  const startEdit = (item: WellnessItem) => {
+    setEditingId(item.id);
+    setEditValue(item.label);
+  };
+
+  const commitEdit = () => {
+    if (editingId && editValue.trim()) onRename(listKey, editingId, editValue.trim());
+    setEditingId(null);
+    setEditValue("");
+  };
+
   return (
     <>
-      <SectionTitle>
+      <SectionTitle
+        action={
+          <button
+            onClick={() => { setEditMode((v) => !v); setEditingId(null); }}
+            className={`grid h-8 w-8 place-items-center rounded-full text-xs font-medium transition ${
+              editMode ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
+            aria-label="تحرير"
+          >
+            {editMode ? <Check className="h-4 w-4" /> : <Pencil className="h-3.5 w-3.5" />}
+          </button>
+        }
+      >
         <span className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-primary" />
           {title}
@@ -172,22 +221,94 @@ function ChecklistSection({
         </span>
       </SectionTitle>
       <Card className="space-y-2 p-3">
-        {items.map((i) => (
-          <button
-            key={i.id}
-            onClick={() => onToggle(i.id)}
-            className="flex w-full items-center gap-3 rounded-2xl p-2 text-right transition hover:bg-muted/50"
-          >
-            <span
-              className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
-                i.done ? "border-success bg-success text-success-foreground" : "border-border"
-              }`}
+        {items.length === 0 && (
+          <p className="py-4 text-center text-xs text-muted-foreground">لا توجد عناصر — أضف واحدة بالأسفل.</p>
+        )}
+        {items.map((i) => {
+          const isEditing = editingId === i.id;
+          return (
+            <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
+              <button
+                onClick={() => !editMode && onToggle(listKey, i.id)}
+                disabled={editMode}
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
+                  i.done ? "border-success bg-success text-success-foreground" : "border-border"
+                }`}
+              >
+                {i.done && "✓"}
+              </button>
+              {isEditing ? (
+                <input
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && commitEdit()}
+                  autoFocus
+                  className="flex-1 rounded-xl border border-primary bg-input/50 px-2 py-1 text-sm outline-none"
+                />
+              ) : (
+                <span className={`flex-1 text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
+                  {i.label}
+                </span>
+              )}
+              {editMode && !isEditing && (
+                <>
+                  <button
+                    onClick={() => startEdit(i)}
+                    className="text-muted-foreground hover:text-primary"
+                    aria-label="تعديل"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onRemove(listKey, i.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="حذف"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              {isEditing && (
+                <>
+                  <button onClick={commitEdit} className="text-success" aria-label="حفظ">
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => setEditingId(null)} className="text-muted-foreground" aria-label="إلغاء">
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
+        {editMode && (
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newLabel.trim()) {
+                  onAdd(listKey, newLabel.trim());
+                  setNewLabel("");
+                }
+              }}
+              placeholder="اسم الخانة الجديدة..."
+              className="flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <button
+              onClick={() => {
+                if (newLabel.trim()) {
+                  onAdd(listKey, newLabel.trim());
+                  setNewLabel("");
+                }
+              }}
+              className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
+              aria-label="إضافة"
             >
-              {i.done && "✓"}
-            </span>
-            <span className={`flex-1 text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>{i.label}</span>
-          </button>
-        ))}
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </Card>
     </>
   );
