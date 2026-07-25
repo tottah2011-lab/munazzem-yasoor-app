@@ -22,7 +22,7 @@ function SettingsPage() {
   const [val, setVal] = useState(String(income));
 
   const exportData = () => {
-    const data = localStorage.getItem("monazem-masareefi-v1") ?? "{}";
+    const data = localStorage.getItem("monazem-masareefi-v2") ?? "{}";
     const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -36,7 +36,7 @@ function SettingsPage() {
     const r = new FileReader();
     r.onload = () => {
       try {
-        localStorage.setItem("monazem-masareefi-v1", String(r.result));
+        localStorage.setItem("monazem-masareefi-v2", String(r.result));
         location.reload();
       } catch {}
     };

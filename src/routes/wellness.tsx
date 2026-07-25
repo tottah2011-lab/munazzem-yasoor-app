@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity, Check, Droplets, Footprints, Minus, Moon, Pencil, Plus, Smile, Trash2, Utensils, Weight, X } from "lucide-react";
+import { Activity, Award, Check, Droplets, Footprints, Laptop, Minus, Moon, Pencil, Plus, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { useStore, type WellnessListKey, type WellnessItem } from "@/lib/store";
 
 export const Route = createFileRoute("/wellness")({
   head: () => ({
     meta: [
-      { title: "الدايت والعناية — منظم مصاريفي" },
-      { name: "description", content: "تابع صحتك ودايتك وعنايتك الشخصية اليومية." },
-      { property: "og:title", content: "الدايت والعناية" },
-      { property: "og:description", content: "قسم متكامل للعناية الشخصية والدايت." },
+      { title: "العناية وتطوير الذات — منظم مصاريفي" },
+      { name: "description", content: "دايت، عناية، تطوير ذات، عملك الإلكتروني، وإنجازاتك." },
+      { property: "og:title", content: "العناية وتطوير الذات 💖" },
+      { property: "og:description", content: "اهتمي بنفسك وطوّري ذاتك يوميًا." },
     ],
   }),
   component: Wellness,
@@ -27,8 +27,8 @@ function Wellness() {
   const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem } = useStore();
 
   return (
-    <AppShell title="الدايت والعناية" subtitle="اهتم بنفسك يوميًا">
-      <SectionTitle>الماء</SectionTitle>
+    <AppShell title="العناية وتطوير الذات 💖" subtitle="اهتمي بنفسك وطوّري ذاتك">
+      <SectionTitle>الماء 💧</SectionTitle>
       <Card>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -58,36 +58,14 @@ function Wellness() {
       </Card>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <NumberCard
-          icon={Utensils}
-          label="سعرات اليوم"
-          value={wellness.calorieTarget}
-          suffix="سعرة"
-          onChange={(v) => setWellness({ calorieTarget: v })}
-        />
-        <NumberCard
-          icon={Weight}
-          label="الوزن"
-          value={wellness.weightKg}
-          suffix="كجم"
-          onChange={(v) => setWellness({ weightKg: v })}
-        />
-        <NumberCard
-          icon={Moon}
-          label="ساعات النوم"
-          value={wellness.sleepHours}
-          suffix="ساعة"
-          step={0.5}
-          onChange={(v) => setWellness({ sleepHours: v })}
-        />
-        <NumberCard
-          icon={Footprints}
-          label={`الخطوات (هدف ${wellness.stepsGoal})`}
-          value={wellness.steps}
-          suffix="خطوة"
-          step={500}
-          onChange={(v) => setWellness({ steps: Math.max(0, Math.round(v)) })}
-        />
+        <NumberCard icon={Utensils} label="سعرات اليوم" value={wellness.calorieTarget} suffix="سعرة"
+          onChange={(v) => setWellness({ calorieTarget: v })} />
+        <NumberCard icon={Weight} label="الوزن" value={wellness.weightKg} suffix="كجم"
+          onChange={(v) => setWellness({ weightKg: v })} />
+        <NumberCard icon={Moon} label="ساعات النوم" value={wellness.sleepHours} suffix="ساعة" step={0.5}
+          onChange={(v) => setWellness({ sleepHours: v })} />
+        <NumberCard icon={Footprints} label={`الخطوات (${wellness.stepsGoal})`} value={wellness.steps} suffix="خطوة" step={500}
+          onChange={(v) => setWellness({ steps: Math.max(0, Math.round(v)) })} />
       </div>
 
       <Card className="mt-3">
@@ -108,7 +86,7 @@ function Wellness() {
         </div>
       </Card>
 
-      <SectionTitle>المزاج اليوم</SectionTitle>
+      <SectionTitle>المزاج اليوم 🌈</SectionTitle>
       <Card>
         <div className="flex items-center justify-between gap-2">
           {moods.map((m) => (
@@ -126,22 +104,21 @@ function Wellness() {
         </div>
       </Card>
 
-      <ChecklistSection
-        title="وجبات صحية" icon={Utensils} listKey="meals" items={wellness.meals}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
-      />
-      <ChecklistSection
-        title="العناية بالبشرة" icon={Smile} listKey="skinCare" items={wellness.skinCare}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
-      />
-      <ChecklistSection
-        title="العناية بالشعر" icon={Smile} listKey="hairCare" items={wellness.hairCare}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
-      />
-      <ChecklistSection
-        title="عادات يومية" icon={Activity} listKey="habits" items={wellness.habits}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem}
-      />
+      <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="العناية بالبشرة 🌸" icon={Smile} listKey="skinCare" items={wellness.skinCare}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="عادات يومية ✨" icon={Activity} listKey="habits" items={wellness.habits}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+
+      <ChecklistSection title="تطوير الذات 📚" icon={Sparkles} listKey="selfDev" items={wellness.selfDev}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="عملي الإلكتروني 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="إنجازاتي 🏆" icon={Award} listKey="achievements" items={wellness.achievements}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
     </AppShell>
   );
 }
@@ -222,7 +199,7 @@ function ChecklistSection({
       </SectionTitle>
       <Card className="space-y-2 p-3">
         {items.length === 0 && (
-          <p className="py-4 text-center text-xs text-muted-foreground">لا توجد عناصر — أضف واحدة بالأسفل.</p>
+          <p className="py-4 text-center text-xs text-muted-foreground">ما فيه عناصر — أضيفي أول واحد ✨</p>
         )}
         {items.map((i) => {
           const isEditing = editingId === i.id;
@@ -252,18 +229,10 @@ function ChecklistSection({
               )}
               {editMode && !isEditing && (
                 <>
-                  <button
-                    onClick={() => startEdit(i)}
-                    className="text-muted-foreground hover:text-primary"
-                    aria-label="تعديل"
-                  >
+                  <button onClick={() => startEdit(i)} className="text-muted-foreground hover:text-primary" aria-label="تعديل">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
-                  <button
-                    onClick={() => onRemove(listKey, i.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="حذف"
-                  >
+                  <button onClick={() => onRemove(listKey, i.id)} className="text-muted-foreground hover:text-destructive" aria-label="حذف">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </>
