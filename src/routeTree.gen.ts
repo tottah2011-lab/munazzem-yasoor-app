@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WellnessRouteImport } from './routes/wellness'
 import { Route as UrgentRouteImport } from './routes/urgent'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PostponableRouteImport } from './routes/postponable'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as ExpensesRouteImport } from './routes/expenses'
@@ -32,11 +31,6 @@ const UrgentRoute = UrgentRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PostponableRoute = PostponableRouteImport.update({
@@ -71,7 +65,6 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof ExpensesRoute
   '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
-  '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/urgent': typeof UrgentRoute
   '/wellness': typeof WellnessRoute
@@ -82,7 +75,6 @@ export interface FileRoutesByTo {
   '/expenses': typeof ExpensesRoute
   '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
-  '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/urgent': typeof UrgentRoute
   '/wellness': typeof WellnessRoute
@@ -94,7 +86,6 @@ export interface FileRoutesById {
   '/expenses': typeof ExpensesRoute
   '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
-  '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/urgent': typeof UrgentRoute
   '/wellness': typeof WellnessRoute
@@ -107,7 +98,6 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/planner'
     | '/postponable'
-    | '/reports'
     | '/settings'
     | '/urgent'
     | '/wellness'
@@ -118,7 +108,6 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/planner'
     | '/postponable'
-    | '/reports'
     | '/settings'
     | '/urgent'
     | '/wellness'
@@ -129,7 +118,6 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/planner'
     | '/postponable'
-    | '/reports'
     | '/settings'
     | '/urgent'
     | '/wellness'
@@ -141,7 +129,6 @@ export interface RootRouteChildren {
   ExpensesRoute: typeof ExpensesRoute
   PlannerRoute: typeof PlannerRoute
   PostponableRoute: typeof PostponableRoute
-  ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   UrgentRoute: typeof UrgentRoute
   WellnessRoute: typeof WellnessRoute
@@ -168,13 +155,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/postponable': {
@@ -221,7 +201,6 @@ const rootRouteChildren: RootRouteChildren = {
   ExpensesRoute: ExpensesRoute,
   PlannerRoute: PlannerRoute,
   PostponableRoute: PostponableRoute,
-  ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   UrgentRoute: UrgentRoute,
   WellnessRoute: WellnessRoute,

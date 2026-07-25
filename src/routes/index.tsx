@@ -1,24 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AlertCircle, ArrowLeft, Clock, HandCoins, Sparkles, TrendingUp, Wallet } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, Gift, HandCoins, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, useStore } from "@/lib/store";
+import { formatSAR, monthLabel, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "الرئيسية — منظم مصاريفي" },
-      { name: "description", content: "لوحة تحكم شاملة لدخلك ومصاريفك وديونك الشهرية." },
-      { property: "og:title", content: "الرئيسية — منظم مصاريفي" },
-      { property: "og:description", content: "لوحة تحكم شاملة لدخلك ومصاريفك وديونك الشهرية." },
+      { name: "description", content: "لوحة تحكم شهرية شاملة لدخلك ومصاريفك وديونك." },
+      { property: "og:title", content: "منظم مصاريفي 💖" },
+      { property: "og:description", content: "لوحة تحكم شهرية شاملة لأموالك." },
     ],
   }),
   component: Dashboard,
 });
 
 function Dashboard() {
-  const { income, urgent, postponable, debts } = useStore();
+  const { income, totalIncome, extraIncome, urgent, postponable, debts, currentMonth, rewardClaimed } = useStore();
 
   const totals = useMemo(() => {
     const urgentTotal = urgent.reduce((s, e) => s + e.amount, 0);
@@ -26,15 +26,16 @@ function Dashboard() {
     const postponableTotal = postponable.reduce((s, e) => s + e.amount, 0);
     const unpaidDebts = debts.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
     const paidDebts = debts.filter((d) => d.paid).reduce((s, d) => s + d.amount, 0);
-    const remaining = income - urgentTotal - unpaidDebts - postponableTotal;
-    const usedPct = Math.min(100, Math.round(((urgentTotal + unpaidDebts + postponableTotal) / Math.max(income, 1)) * 100));
-    return { urgentTotal, urgentPaid, postponableTotal, unpaidDebts, paidDebts, remaining, usedPct };
-  }, [income, urgent, postponable, debts]);
+    const extrasTotal = extraIncome.reduce((s, e) => s + e.amount, 0);
+    const remaining = totalIncome - urgentTotal - unpaidDebts - postponableTotal;
+    const usedPct = Math.min(100, Math.round(((urgentTotal + unpaidDebts + postponableTotal) / Math.max(totalIncome, 1)) * 100));
+    return { urgentTotal, urgentPaid, postponableTotal, unpaidDebts, paidDebts, remaining, usedPct, extrasTotal };
+  }, [totalIncome, extraIncome, urgent, postponable, debts]);
 
   const remainingTone =
     totals.remaining < 0
       ? "text-destructive"
-      : totals.remaining < income * 0.3
+      : totals.remaining < totalIncome * 0.3
         ? "text-warning"
         : "text-success";
 
@@ -46,19 +47,22 @@ function Dashboard() {
   ].filter((d) => d.value > 0);
 
   const tips: { icon: typeof Sparkles; text: string; tone: string }[] = [];
-  if (totals.remaining < 0) tips.push({ icon: AlertCircle, text: "تجاوزت ميزانيتك! قلّل من المصاريف القابلة للتأجيل.", tone: "text-destructive" });
-  if (totals.unpaidDebts > 0) tips.push({ icon: HandCoins, text: "سدد الديون قبل الشراء الاختياري لتحافظ على راحتك المالية.", tone: "text-warning" });
+  if (totals.remaining < 0) tips.push({ icon: AlertCircle, text: "تجاوزتِ ميزانيتك! قلّلي من المصاريف الاختيارية.", tone: "text-destructive" });
+  if (totals.unpaidDebts > 0) tips.push({ icon: HandCoins, text: "سدّدي الديون قبل الشراء الاختياري لراحتك المالية.", tone: "text-warning" });
   if (urgent.some((u) => !u.paid))
-    tips.push({ icon: Wallet, text: "لديك مصاريف عاجلة غير مدفوعة، ابدأ بها أولًا.", tone: "text-primary" });
+    tips.push({ icon: Wallet, text: "لديك مصاريف عاجلة غير مدفوعة، ابدئي بها أولًا.", tone: "text-primary" });
+  if (rewardClaimed)
+    tips.push({ icon: Gift, text: "استلمتِ مكافأتك هذا الشهر! تستاهلين 🎁", tone: "text-warning" });
   if (tips.length === 0)
-    tips.push({ icon: Sparkles, text: "أحسنت! أموالك تحت السيطرة هذا الشهر.", tone: "text-success" });
+    tips.push({ icon: Sparkles, text: "أحسنتِ! أموالك تحت السيطرة هذا الشهر 💚", tone: "text-success" });
 
   return (
-    <AppShell title="منظم مصاريفي" subtitle={`ميزانيتك الشهرية ${formatSAR(income)}`}>
+    <AppShell title={`أهلًا 💖 — ${monthLabel(currentMonth)}`} subtitle={`إجمالي دخلك ${formatSAR(totalIncome)}`}>
       {/* Hero balance card */}
       <div className="relative overflow-hidden rounded-3xl gradient-primary p-6 text-primary-foreground shadow-elegant">
         <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <p className="text-xs opacity-90">الرصيد المتبقي</p>
+        <div className="absolute -bottom-8 -right-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+        <p className="text-xs opacity-90">الرصيد المتبقي ✨</p>
         <p className="mt-1 text-4xl font-black tracking-tight">{formatSAR(totals.remaining)}</p>
         <div className="mt-4">
           <div className="flex items-center justify-between text-[11px] opacity-90">
@@ -71,11 +75,17 @@ function Dashboard() {
         </div>
         <div className="mt-5 flex items-center justify-between text-xs">
           <div>
-            <p className="opacity-80">الدخل</p>
+            <p className="opacity-80">الراتب</p>
             <p className="font-bold">{formatSAR(income)}</p>
           </div>
+          {totals.extrasTotal > 0 && (
+            <div>
+              <p className="opacity-80">+ إضافي</p>
+              <p className="font-bold">{formatSAR(totals.extrasTotal)}</p>
+            </div>
+          )}
           <Link to="/settings" className="flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 font-medium">
-            تعديل الدخل <ArrowLeft className="h-3.5 w-3.5" />
+            تعديل <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -85,11 +95,10 @@ function Dashboard() {
         <StatCard label="مصاريف عاجلة" value={formatSAR(totals.urgentTotal)} icon={Wallet} to="/expenses" tone="from-primary/20 to-primary/5" />
         <StatCard label="قابلة للتأجيل" value={formatSAR(totals.postponableTotal)} icon={Clock} to="/expenses" tone="from-info/20 to-info/5" />
         <StatCard label="ديون غير مسددة" value={formatSAR(totals.unpaidDebts)} icon={HandCoins} to="/expenses" tone="from-destructive/20 to-destructive/5" />
-        <StatCard label="ديون مسددة" value={formatSAR(totals.paidDebts)} icon={TrendingUp} to="/expenses" tone="from-success/20 to-success/5" />
-
+        <StatCard label="دخل إضافي" value={formatSAR(totals.extrasTotal)} icon={TrendingUp} to="/planner" tone="from-success/20 to-success/5" />
       </div>
 
-      <SectionTitle>توزيع المصاريف</SectionTitle>
+      <SectionTitle>توزيع المصاريف 🎨</SectionTitle>
       <Card>
         {pieData.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">لا توجد بيانات لعرضها بعد.</p>
@@ -123,7 +132,7 @@ function Dashboard() {
         )}
       </Card>
 
-      <SectionTitle>المستشار الذكي</SectionTitle>
+      <SectionTitle>المستشار الذكي 💬</SectionTitle>
       <div className="space-y-2">
         {tips.map((t, i) => (
           <Card key={i} className="flex items-start gap-3">

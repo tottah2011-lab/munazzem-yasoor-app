@@ -1,113 +1,232 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ClipboardList, Minus, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Target, Trash2 } from "lucide-react";
+import { CalendarPlus, ClipboardList, Gift, Minus, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Target, Trash2, TrendingUp } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, useStore } from "@/lib/store";
+import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
       { title: "التخطيط الذكي — منظم مصاريفي" },
-      { name: "description", content: "قسّم دخلك بذكاء، تابع أهداف الادخار، وسجّل مصاريفك اليومية." },
-      { property: "og:title", content: "التخطيط الذكي" },
-      { property: "og:description", content: "توزيع الدخل، خطة الإنفاق، والادخار في مكان واحد." },
+      { name: "description", content: "خطة إنفاق شهرية، مبالغ إضافية، مدخرات ومكافآت في مكان واحد." },
+      { property: "og:title", content: "التخطيط الذكي 💫" },
+      { property: "og:description", content: "خططي شهرك، سجّلي مبالغك الإضافية، وكافئي نفسك." },
     ],
   }),
   component: PlannerPage,
 });
 
 function PlannerPage() {
-  const {
-    income, budgetSplit, setBudgetSplit,
-    savings, addSavingsGoal, addToSavings, removeSavingsGoal,
-    monthlyPlan, addPlanItem, updatePlanItem, removePlanItem, spendOnPlan, resetPlanSpent,
-  } = useStore();
-
-  const total = budgetSplit.needs + budgetSplit.wants + budgetSplit.savings;
-  const normalized = total > 0 ? total : 1;
-  const amounts = {
-    needs: Math.round((income * budgetSplit.needs) / normalized),
-    wants: Math.round((income * budgetSplit.wants) / normalized),
-    savings: Math.round((income * budgetSplit.savings) / normalized),
-  };
-
-  const presets = [
-    { label: "50 / 30 / 20", v: { needs: 50, wants: 30, savings: 20 } },
-    { label: "60 / 20 / 20", v: { needs: 60, wants: 20, savings: 20 } },
-    { label: "70 / 20 / 10", v: { needs: 70, wants: 20, savings: 10 } },
-    { label: "40 / 30 / 30", v: { needs: 40, wants: 30, savings: 30 } },
-  ];
+  const s = useStore();
 
   return (
-    <AppShell title="التخطيط الذكي" subtitle="قسّم دخلك، خطّط، وادّخر">
-      <SectionTitle>تقسيم الدخل بذكاء</SectionTitle>
-      <Card>
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/15 text-primary">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">الدخل الشهري</p>
-            <p className="text-lg font-bold">{formatSAR(income)}</p>
-          </div>
-        </div>
+    <AppShell title="التخطيط الذكي ✨" subtitle={`خطة ${monthLabel(s.currentMonth)}`}>
+      <ExtraIncomeSection />
 
-        <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary" style={{ width: `${(budgetSplit.needs / normalized) * 100}%` }} />
-          <div className="h-full bg-info" style={{ width: `${(budgetSplit.wants / normalized) * 100}%` }} />
-          <div className="h-full bg-success" style={{ width: `${(budgetSplit.savings / normalized) * 100}%` }} />
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-          <SplitBox tone="text-primary" label="أساسيات" pct={budgetSplit.needs} amount={amounts.needs} />
-          <SplitBox tone="text-info" label="اختيارية" pct={budgetSplit.wants} amount={amounts.wants} />
-          <SplitBox tone="text-success" label="ادخار" pct={budgetSplit.savings} amount={amounts.savings} />
-        </div>
-
-        <div className="mt-4 space-y-3">
-          <PctSlider label="أساسيات" value={budgetSplit.needs} onChange={(v) => setBudgetSplit({ needs: v })} />
-          <PctSlider label="اختيارية" value={budgetSplit.wants} onChange={(v) => setBudgetSplit({ wants: v })} />
-          <PctSlider label="ادخار" value={budgetSplit.savings} onChange={(v) => setBudgetSplit({ savings: v })} />
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => setBudgetSplit(p.v)}
-              className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {total !== 100 && (
-          <p className="mt-3 text-center text-xs text-warning">
-            المجموع {total}% — يُفضّل أن يكون 100%.
-          </p>
-        )}
-      </Card>
+      <RewardSection />
 
       <MonthlyPlanSection
-        items={monthlyPlan}
-        income={income}
-        onAdd={addPlanItem}
-        onUpdate={updatePlanItem}
-        onRemove={removePlanItem}
-        onSpend={spendOnPlan}
-        onReset={resetPlanSpent}
+        items={s.monthlyPlan}
+        income={s.totalIncome}
+        onAdd={s.addPlanItem}
+        onUpdate={s.updatePlanItem}
+        onRemove={s.removePlanItem}
+        onSpend={s.spendOnPlan}
+        onReset={s.resetPlanSpent}
       />
 
       <SavingsSection
-        savings={savings}
-        onAdd={addSavingsGoal}
-        onAddAmount={addToSavings}
-        onRemove={removeSavingsGoal}
-        recommended={amounts.savings}
+        savings={s.savings}
+        onAdd={s.addSavingsGoal}
+        onAddAmount={s.addToSavings}
+        onRemove={s.removeSavingsGoal}
       />
     </AppShell>
+  );
+}
+
+function ExtraIncomeSection() {
+  const { extraIncome, addExtraIncome, removeExtraIncome, income, totalIncome } = useStore();
+  const [showForm, setShowForm] = useState(false);
+  const [source, setSource] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [icon, setIcon] = useState("💵");
+
+  const suggestions = ["💵", "🎁", "🏆", "🛍️", "📱", "💼", "🤝", "🌸"];
+  const extrasTotal = extraIncome.reduce((a, b) => a + b.amount, 0);
+
+  return (
+    <>
+      <SectionTitle
+        action={
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground shadow-soft"
+            aria-label="إضافة مبلغ"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        }
+      >
+        دخل إضافي 💰
+      </SectionTitle>
+
+      <Card>
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">إضافي هذا الشهر</p>
+            <p className="text-lg font-bold text-success">+{formatSAR(extrasTotal)}</p>
+          </div>
+          <div className="text-left">
+            <p className="text-xs text-muted-foreground">إجمالي الدخل</p>
+            <p className="text-sm font-semibold">{formatSAR(totalIncome)}</p>
+            <p className="text-[10px] text-muted-foreground">راتب {formatSAR(income)}</p>
+          </div>
+        </div>
+      </Card>
+
+      {showForm && (
+        <Card className="mt-3 space-y-3">
+          <div>
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">أيقونة</span>
+            <div className="flex flex-wrap gap-1.5">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setIcon(s)}
+                  className={`grid h-9 w-9 place-items-center rounded-full text-lg transition ${
+                    icon === s ? "gradient-primary shadow-soft" : "bg-muted"
+                  }`}
+                >{s}</button>
+              ))}
+            </div>
+          </div>
+          <Input label="المصدر" value={source} onChange={setSource} placeholder="مثال: هدية، عمل حر، استرجاع" />
+          <Input label="المبلغ" value={amount} onChange={setAmount} type="number" placeholder="0" />
+          <Input label="التاريخ" value={date} onChange={setDate} type="date" />
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => {
+                if (!source || !amount) return;
+                addExtraIncome({ source, amount: Number(amount), date, icon });
+                setSource(""); setAmount(""); setIcon("💵"); setShowForm(false);
+              }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >حفظ</button>
+            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
+      <div className="mt-3 space-y-2">
+        {extraIncome.length === 0 && (
+          <p className="py-4 text-center text-xs text-muted-foreground">لا يوجد دخل إضافي هذا الشهر بعد.</p>
+        )}
+        {extraIncome.map((e) => (
+          <Card key={e.id} className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-success/10 text-lg">
+              {e.icon ?? "💵"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{e.source}</p>
+              <p className="text-[11px] text-muted-foreground">{e.date}</p>
+            </div>
+            <p className="shrink-0 text-sm font-bold text-success">+{formatSAR(e.amount)}</p>
+            <button
+              onClick={() => removeExtraIncome(e.id)}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="حذف"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </Card>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function RewardSection() {
+  const { urgent, debts, monthlyPlan, rewardClaimed, rewardNote, claimReward, unclaimReward } = useStore();
+  const [note, setNote] = useState("");
+
+  const allUrgentPaid = urgent.length === 0 || urgent.every((x) => x.paid || (x.installment && x.installment.monthsPaid > 0));
+  const allDebtsPaid = debts.every((x) => x.paid);
+  const noOverspend = monthlyPlan.every((p) => p.spent <= p.amount);
+  const eligible = allUrgentPaid && allDebtsPaid && noOverspend;
+
+  return (
+    <>
+      <SectionTitle>مكافأة الالتزام 🎁</SectionTitle>
+      <Card
+        className={`relative overflow-hidden ${
+          rewardClaimed
+            ? "border-2 border-warning/40 bg-warning/5"
+            : eligible
+              ? "border-2 border-success/40 bg-success/5"
+              : ""
+        }`}
+      >
+        <div className="absolute -top-6 -left-6 h-24 w-24 rounded-full bg-warning/20 blur-2xl" />
+        <div className="relative flex items-center gap-3">
+          <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl ${
+            rewardClaimed ? "bg-warning/20" : eligible ? "bg-success/20" : "bg-muted"
+          }`}>
+            {rewardClaimed ? "🎉" : eligible ? "🎁" : "💫"}
+          </div>
+          <div className="flex-1">
+            {rewardClaimed ? (
+              <>
+                <p className="font-bold text-warning">استحققتِ مكافأتك! ✨</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{rewardNote || "التزامك يستاهل"}</p>
+              </>
+            ) : eligible ? (
+              <>
+                <p className="font-bold text-success">شطورة! أنتِ ملتزمة بالخطة 💚</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">اختاري مكافأة صغيرة لنفسك.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-bold">في طريقك للمكافأة 🌱</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">سدّدي العاجل، وابتعدي عن تجاوز الخطة.</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {!rewardClaimed && (
+          <div className="mt-4 flex items-center gap-2">
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="مكافأتك اليوم (مثال: كوب لاتيه ☕)"
+              className="w-full rounded-full border border-border bg-input/50 px-4 py-2 text-sm outline-none focus:border-primary"
+            />
+            <button
+              onClick={() => { claimReward(note.trim() || undefined); setNote(""); }}
+              disabled={!eligible}
+              className="shrink-0 rounded-full gradient-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              <Gift className="mr-1 inline h-3.5 w-3.5" /> استلام
+            </button>
+          </div>
+        )}
+
+        {rewardClaimed && (
+          <button
+            onClick={unclaimReward}
+            className="mt-3 w-full rounded-full bg-muted py-2 text-xs font-medium text-muted-foreground"
+          >
+            إعادة تعيين المكافأة
+          </button>
+        )}
+      </Card>
+    </>
   );
 }
 
@@ -122,6 +241,7 @@ function MonthlyPlanSection({
   onSpend: ReturnType<typeof useStore>["spendOnPlan"];
   onReset: ReturnType<typeof useStore>["resetPlanSpent"];
 }) {
+  const { currentMonth } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -148,7 +268,10 @@ function MonthlyPlanSection({
           </button>
         }
       >
-        خطة الإنفاق الشهرية
+        <span className="flex items-center gap-2">
+          <CalendarPlus className="h-4 w-4 text-primary" />
+          خطة إنفاق {monthLabel(currentMonth)}
+        </span>
       </SectionTitle>
 
       <Card>
@@ -175,7 +298,7 @@ function MonthlyPlanSection({
         </div>
         <p className={`mt-2 text-center text-xs ${over ? "text-destructive" : "text-muted-foreground"}`}>
           {over
-            ? `الخطة تتجاوز الدخل بمقدار ${formatSAR(-remaining)} — راجع البنود`
+            ? `الخطة تتجاوز الدخل بمقدار ${formatSAR(-remaining)} — راجعي البنود`
             : `خطتك تستخدم ${pct}% من دخلك (${formatSAR(income)})`}
         </p>
       </Card>
@@ -214,7 +337,7 @@ function MonthlyPlanSection({
 
       <div className="mt-3 space-y-3">
         {items.length === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">لا توجد بنود في خطتك بعد.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">ما فيه بنود في خطتك بعد — أضيفي أول بند 💫</p>
         )}
         {items.map((it) => (
           <PlanItemCard
@@ -261,7 +384,7 @@ function PlanItemCard({
             </p>
           </div>
           <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>صرفت {formatSAR(item.spent)}</span>
+            <span>صرفتِ {formatSAR(item.spent)}</span>
             <span>من {formatSAR(item.amount)}</span>
           </div>
         </div>
@@ -333,43 +456,13 @@ function PlanItemCard({
   );
 }
 
-function SplitBox({ tone, label, pct, amount }: { tone: string; label: string; pct: number; amount: number }) {
-  return (
-    <div className="rounded-2xl bg-muted/40 p-2.5">
-      <p className="text-[10px] text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-sm font-bold ${tone}`}>{pct}%</p>
-      <p className="mt-0.5 text-[11px] font-semibold">{formatSAR(amount)}</p>
-    </div>
-  );
-}
-
-function PctSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <label className="block">
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-medium text-muted-foreground">{label}</span>
-        <span className="font-bold">{value}%</span>
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-primary"
-      />
-    </label>
-  );
-}
-
 function SavingsSection({
-  savings, onAdd, onAddAmount, onRemove, recommended,
+  savings, onAdd, onAddAmount, onRemove,
 }: {
   savings: ReturnType<typeof useStore>["savings"];
   onAdd: ReturnType<typeof useStore>["addSavingsGoal"];
   onAddAmount: ReturnType<typeof useStore>["addToSavings"];
   onRemove: ReturnType<typeof useStore>["removeSavingsGoal"];
-  recommended: number;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -392,7 +485,7 @@ function SavingsSection({
           </button>
         }
       >
-        المدخرات وأهدافك
+        المدخرات وأهدافك 🎯
       </SectionTitle>
 
       <Card>
@@ -409,9 +502,6 @@ function SavingsSection({
             <p className="text-sm font-semibold">{formatSAR(totalTarget)}</p>
           </div>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          المقترح ادخاره شهريًا حسب تقسيمك: <span className="font-bold text-success">{formatSAR(recommended)}</span>
-        </p>
       </Card>
 
       {showForm && (
@@ -427,9 +517,7 @@ function SavingsSection({
                 setName(""); setTarget(""); setCurrent(""); setShowForm(false);
               }}
               className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
-            >
-              حفظ
-            </button>
+            >حفظ</button>
             <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
           </div>
         </Card>
@@ -437,7 +525,7 @@ function SavingsSection({
 
       <div className="mt-3 space-y-2">
         {savings.length === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">لا توجد أهداف ادخار بعد.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">ما فيه أهداف ادخار بعد — ابدئي حلمك 💭</p>
         )}
         {savings.map((g) => {
           const pct = Math.min(100, Math.round((g.current / Math.max(g.target, 1)) * 100));
