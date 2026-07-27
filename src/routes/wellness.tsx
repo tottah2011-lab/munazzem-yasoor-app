@@ -112,16 +112,13 @@ function Wellness() {
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection
         title="مشاكل أبغى أحلها 💗"
-        subtitle="اكتبي مشكلتك، ولما تحلينها ✓ نحتفل فيها"
-        emptyHint="فاضية — أضيفي أول مشكلة تبغين تشتغلين عليها ✨"
-        doneLabel="محلولة"
         icon={HeartPulse} listKey="concerns" items={wellness.concerns}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection
         title="جدول تمارين المقاومة 🏋️‍♀️"
-        subtitle="تماريني اليومية — سوّي ✓ لما تخلصين التمرين"
         icon={Dumbbell} listKey="workouts" items={wellness.workouts}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+
       <ChecklistSection title="عادات يومية ✨" icon={Activity} listKey="habits" items={wellness.habits}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
 
