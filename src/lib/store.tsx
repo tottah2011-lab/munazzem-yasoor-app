@@ -311,6 +311,7 @@ function emptyMonth(income = 2000): MonthData {
     postponable: [],
     debts: [],
     monthlyPlan: [],
+    dailyExpenses: [],
     rewardClaimed: false,
   };
 }
@@ -338,6 +339,7 @@ function seedMonth(): MonthData {
       { id: uid(), category: "قهوة", amount: 120, spent: 0, icon: "☕" },
       { id: uid(), category: "ادخار", amount: 300, spent: 0, icon: "🏦" },
     ],
+    dailyExpenses: [],
     rewardClaimed: false,
   };
 }
@@ -354,6 +356,7 @@ function defaultState(): State {
       { id: uid(), name: "صندوق الطوارئ", target: 5000, current: 1200 },
       { id: uid(), name: "رحلة صيفية", target: 3000, current: 500 },
     ],
+    alinmaSavings: { total: 0, payments: [] },
   };
 }
 
@@ -367,6 +370,7 @@ function normalizeMonth(m: Partial<MonthData> | undefined): MonthData {
     postponable: m.postponable ?? [],
     debts: m.debts ?? [],
     monthlyPlan: (m.monthlyPlan ?? []).map((p) => ({ ...p, spent: p.spent ?? 0 })),
+    dailyExpenses: (m.dailyExpenses ?? []).map((d) => ({ ...d })),
     rewardClaimed: m.rewardClaimed ?? false,
     rewardNote: m.rewardNote,
   };
@@ -391,6 +395,7 @@ function loadState(): State {
         theme: parsed.theme ?? "light",
         budgetSplit: parsed.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: parsed.savings ?? [],
+        alinmaSavings: parsed.alinmaSavings ?? { total: 0, payments: [] },
       };
     }
     // migrate legacy v1
@@ -405,6 +410,7 @@ function loadState(): State {
         postponable: p.postponable ?? [],
         debts: p.debts ?? [],
         monthlyPlan: p.monthlyPlan ?? [],
+        dailyExpenses: [],
         rewardClaimed: false,
       });
       return {
@@ -414,10 +420,12 @@ function loadState(): State {
         theme: p.theme ?? "light",
         budgetSplit: p.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: p.savings ?? [],
+        alinmaSavings: { total: 0, payments: [] },
       };
     }
   } catch {}
   return defaultState();
+
 }
 
 const StoreContext = createContext<Ctx | null>(null);
