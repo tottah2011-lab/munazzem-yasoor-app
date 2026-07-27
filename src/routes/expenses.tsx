@@ -102,9 +102,10 @@ function ExpensesPage() {
             <p className="mt-0.5 font-bold">{formatSAR(commitmentsTotal)}</p>
           </div>
           <div className="rounded-2xl bg-white/15 p-2 text-center">
-            <p className="opacity-80">مدخراتك</p>
-            <p className="mt-0.5 font-bold">{formatSAR(savingsTotal)}</p>
+            <p className="opacity-80">إنماء متبقي</p>
+            <p className="mt-0.5 font-bold">{formatSAR(alinmaLeft)}</p>
           </div>
+
         </div>
       </div>
 
@@ -140,9 +141,10 @@ function ExpensesPage() {
 
       {tab === "installment" && <InstallmentSection showForm={showForm} setShowForm={setShowForm} />}
       {tab === "commitments" && <CommitmentsSection showForm={showForm} setShowForm={setShowForm} />}
-      {tab === "savings" && <SavingsSection showForm={showForm} setShowForm={setShowForm} />}
+      {tab === "daily" && <DailySection showForm={showForm} setShowForm={setShowForm} />}
       {tab === "wishlist" && <WishlistSection showForm={showForm} setShowForm={setShowForm} />}
-      {tab === "debts" && <DebtsSection showForm={showForm} setShowForm={setShowForm} paidTotal={debtPaid} />}
+      {tab === "alinma" && <AlinmaSection showForm={showForm} setShowForm={setShowForm} />}
+
     </AppShell>
   );
 }
