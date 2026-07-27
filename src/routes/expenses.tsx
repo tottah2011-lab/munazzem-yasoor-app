@@ -699,6 +699,334 @@ function DebtsSection({
   );
 }
 
+/* ---------------- Daily Expenses ---------------- */
+
+const dailyCategories = ["طعام", "قهوة", "مواصلات", "تسوّق", "ترفيه", "بقالة", "أخرى"];
+
+function DailySection({
+  showForm, setShowForm,
+}: { showForm: boolean; setShowForm: (v: boolean) => void }) {
+  const { dailyExpenses, addDaily, toggleDailyMistake, removeDaily } = useStore();
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [category, setCategory] = useState("طعام");
+  const [mistake, setMistake] = useState(false);
+  const [note, setNote] = useState("");
+  const [filter, setFilter] = useState<"all" | "mistake">("all");
+
+  const list = filter === "mistake" ? dailyExpenses.filter((d) => d.mistake) : dailyExpenses;
+  const total = dailyExpenses.reduce((a, b) => a + b.amount, 0);
+  const mistakesTotal = dailyExpenses.filter((d) => d.mistake).reduce((a, b) => a + b.amount, 0);
+
+  // group by date desc
+  const byDate = new Map<string, typeof dailyExpenses>();
+  for (const d of list) {
+    if (!byDate.has(d.date)) byDate.set(d.date, [] as typeof dailyExpenses);
+    byDate.get(d.date)!.push(d);
+  }
+  const sortedDates = [...byDate.keys()].sort((a, b) => (a < b ? 1 : -1));
+
+  return (
+    <>
+      {showForm && (
+        <Card className="mt-4 space-y-3">
+          <Input label="على إيش صرفتِ؟" value={name} onChange={setName} placeholder="مثال: كابتشينو من ستاربكس" />
+          <div className="grid grid-cols-2 gap-2">
+            <Input label="المبلغ" value={amount} onChange={setAmount} type="number" placeholder="0" />
+            <Input label="التاريخ" value={date} onChange={setDate} type="date" />
+          </div>
+          <div>
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">التصنيف</span>
+            <div className="flex flex-wrap gap-2">
+              {dailyCategories.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCategory(c)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                    category === c ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-medium transition ${
+            mistake ? "border-destructive/40 bg-destructive/5 text-destructive" : "border-border"
+          }`}>
+            <input
+              type="checkbox"
+              checked={mistake}
+              onChange={(e) => setMistake(e.target.checked)}
+              className="h-4 w-4 accent-destructive"
+            />
+            <AlertTriangle className="h-4 w-4" />
+            صرفتها بطريقة غلط (ما كانت ضرورية)
+          </label>
+          <Input label="ملاحظة" value={note} onChange={setNote} placeholder="اختياري" />
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => {
+                if (!name || !amount) return;
+                addDaily({ name, amount: Number(amount), date, category, mistake, note: note || undefined });
+                setName(""); setAmount(""); setMistake(false); setNote(""); setShowForm(false);
+              }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >حفظ</button>
+            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Card className="p-3 text-center">
+          <p className="text-[10px] text-muted-foreground">إجمالي اليوميات</p>
+          <p className="mt-1 text-sm font-bold text-primary">{formatSAR(total)}</p>
+        </Card>
+        <Card className={`p-3 text-center ${mistakesTotal > 0 ? "border border-destructive/30 bg-destructive/5" : ""}`}>
+          <p className="text-[10px] text-muted-foreground">صرف غلط ⚠️</p>
+          <p className={`mt-1 text-sm font-bold ${mistakesTotal > 0 ? "text-destructive" : "text-success"}`}>
+            {formatSAR(mistakesTotal)}
+          </p>
+        </Card>
+      </div>
+
+      {mistakesTotal > 0 && (
+        <Card className="mt-3 flex items-start gap-3 border border-destructive/25 bg-destructive/5">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-destructive/15 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <p className="pt-1 text-xs leading-relaxed text-destructive">
+            انتبهي 💗 صرفتِ {formatSAR(mistakesTotal)} بطريقة غير ضرورية هالشهر — حاولي تقللينها الأسبوع الجاي.
+          </p>
+        </Card>
+      )}
+
+      <div className="mt-3 flex gap-2 text-xs">
+        {(["all", "mistake"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`rounded-full px-3 py-1.5 font-medium transition ${
+              filter === f ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {f === "all" ? "كل اليوميات" : "الصرف الغلط فقط"}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 space-y-4">
+        {list.length === 0 && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            ما سجلتِ أي مصروف يومي بعد ☀️
+          </p>
+        )}
+        {sortedDates.map((d) => {
+          const items = byDate.get(d)!;
+          const dayTotal = items.reduce((a, b) => a + b.amount, 0);
+          return (
+            <div key={d}>
+              <div className="mb-2 flex items-center justify-between px-1">
+                <p className="text-sm font-bold">📅 {d}</p>
+                <p className="text-xs font-semibold text-primary">{formatSAR(dayTotal)}</p>
+              </div>
+              <div className="space-y-2">
+                {items.map((e) => (
+                  <Card
+                    key={e.id}
+                    className={`flex items-center gap-3 ${
+                      e.mistake ? "border border-destructive/30 bg-destructive/5" : ""
+                    }`}
+                  >
+                    <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
+                      e.mistake ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"
+                    }`}>
+                      {e.mistake ? <AlertTriangle className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate font-semibold">{e.name}</p>
+                        <p className={`shrink-0 font-bold ${e.mistake ? "text-destructive" : ""}`}>
+                          {formatSAR(e.amount)}
+                        </p>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                        {e.category && <span>{e.category}</span>}
+                        {e.mistake && (
+                          <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                            ⚠️ صرف غلط
+                          </span>
+                        )}
+                      </div>
+                      {e.note && <p className="mt-1 text-xs text-muted-foreground">{e.note}</p>}
+                    </div>
+                    <button
+                      onClick={() => toggleDailyMistake(e.id)}
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
+                        e.mistake ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground hover:text-destructive"
+                      }`}
+                      aria-label="تبديل صرف غلط"
+                      title="تبديل صرف غلط"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => removeDaily(e.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* ---------------- Alinma Savings ---------------- */
+
+function AlinmaSection({
+  showForm, setShowForm,
+}: { showForm: boolean; setShowForm: (v: boolean) => void }) {
+  const { alinmaSavings, setAlinmaTotal, addAlinmaPayment, removeAlinmaPayment, resetAlinma } = useStore();
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState("");
+  const [editTotal, setEditTotal] = useState(false);
+  const [totalInput, setTotalInput] = useState(String(alinmaSavings.total || ""));
+
+  const paid = alinmaSavings.payments.reduce((a, b) => a + b.amount, 0);
+  const left = Math.max(0, alinmaSavings.total - paid);
+  const pct = alinmaSavings.total > 0 ? Math.min(100, Math.round((paid / alinmaSavings.total) * 100)) : 0;
+  const done = alinmaSavings.total > 0 && left === 0;
+
+  return (
+    <>
+      {/* Hero Alinma card */}
+      <div className={`mt-4 relative overflow-hidden rounded-3xl p-5 text-primary-foreground shadow-elegant ${
+        done ? "bg-gradient-to-br from-success to-success/70" : "gradient-info"
+      }`}>
+        <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+        <div className="absolute -bottom-10 -right-6 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+        <div className="flex items-center gap-2 text-xs opacity-90">
+          <Landmark className="h-4 w-4" />
+          <span>ادخار الإنماء — سداد المقترض منه</span>
+        </div>
+        <p className="mt-2 text-xs opacity-80">المبلغ المتبقي عليكِ</p>
+        <p className="mt-1 text-4xl font-black tracking-tight">{formatSAR(left)}</p>
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-[11px] opacity-90">
+            <span>تم سداد {formatSAR(paid)}</span>
+            <span>{pct}%</span>
+          </div>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/20">
+            <div className="h-full rounded-full bg-white transition-all" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-between text-xs">
+          <div>
+            <p className="opacity-80">إجمالي المقترض</p>
+            <p className="font-bold">{formatSAR(alinmaSavings.total)}</p>
+          </div>
+          <button
+            onClick={() => { setTotalInput(String(alinmaSavings.total || "")); setEditTotal((v) => !v); }}
+            className="rounded-full bg-white/15 px-3 py-1.5 font-medium"
+          >
+            {alinmaSavings.total > 0 ? "تعديل المبلغ" : "حدّدي المبلغ"}
+          </button>
+        </div>
+      </div>
+
+      {editTotal && (
+        <Card className="mt-3 space-y-3">
+          <Input label="إجمالي المبلغ المقترض من ادخارك" value={totalInput} onChange={setTotalInput} type="number" placeholder="0" />
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setAlinmaTotal(Number(totalInput) || 0); setEditTotal(false); }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >حفظ</button>
+            <button
+              onClick={() => { if (confirm("متأكدة تبين تصفير كل شي؟")) resetAlinma(); }}
+              className="rounded-full bg-destructive/10 px-4 py-2.5 text-sm font-medium text-destructive"
+            >تصفير</button>
+            <button onClick={() => setEditTotal(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
+      {showForm && (
+        <Card className="mt-4 space-y-3">
+          <Input label="مبلغ السداد" value={amount} onChange={setAmount} type="number" placeholder="0" />
+          <Input label="التاريخ" value={date} onChange={setDate} type="date" />
+          <Input label="ملاحظة" value={note} onChange={setNote} placeholder="اختياري" />
+          <div className="flex flex-wrap gap-2">
+            {[50, 100, 200, 500].map((n) => (
+              <button
+                key={n}
+                onClick={() => setAmount(String(n))}
+                className="rounded-full bg-info/10 px-3 py-1.5 text-xs font-semibold text-info hover:bg-info/20"
+              >
+                +{n}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => {
+                if (!amount) return;
+                addAlinmaPayment({ amount: Number(amount), date, note: note || undefined });
+                setAmount(""); setNote(""); setShowForm(false);
+              }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >تسجيل السداد</button>
+            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
+      {alinmaSavings.total === 0 && !showForm && !editTotal && (
+        <Card className="mt-4 flex items-start gap-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-info/10 text-info">
+            <Landmark className="h-5 w-5" />
+          </div>
+          <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
+            حدّدي أول شي كم المبلغ اللي سحبتيه من ادخارك، وبعدها سجّلي كل سداد وشوفي تقدمك 💚
+          </p>
+        </Card>
+      )}
+
+      <SectionTitle>سجل السداد 📖</SectionTitle>
+      <div className="space-y-2">
+        {alinmaSavings.payments.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">ما فيه أي سداد مسجّل بعد.</p>
+        )}
+        {alinmaSavings.payments.map((p) => (
+          <Card key={p.id} className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success/15 text-success">
+              <Check className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate font-semibold">سداد للإنماء</p>
+                <p className="shrink-0 font-bold text-success">{formatSAR(p.amount)}</p>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">📅 {p.date}</p>
+              {p.note && <p className="mt-1 text-xs text-muted-foreground">{p.note}</p>}
+            </div>
+            <button onClick={() => removeAlinmaPayment(p.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </Card>
+        ))}
+      </div>
+    </>
+  );
+}
+
+
 /* ---------------- Shared urgent form ---------------- */
 
 function UrgentForm({
