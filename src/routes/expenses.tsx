@@ -443,6 +443,21 @@ function SavingsSection({
 
 /* ---------------- Wishlist ---------------- */
 
+const wishCategories = [
+  { key: "عناية", emoji: "💄" },
+  { key: "ملابس", emoji: "👗" },
+  { key: "سيارة", emoji: "🚗" },
+  { key: "بيت", emoji: "🏠" },
+  { key: "إلكترونيات", emoji: "📱" },
+  { key: "هدايا", emoji: "🎁" },
+  { key: "سفر", emoji: "✈️" },
+  { key: "أخرى", emoji: "✨" },
+] as const;
+
+function wishEmoji(cat?: string) {
+  return wishCategories.find((c) => c.key === cat)?.emoji ?? "✨";
+}
+
 function WishlistSection({
   showForm, setShowForm,
 }: { showForm: boolean; setShowForm: (v: boolean) => void }) {
@@ -450,6 +465,19 @@ function WishlistSection({
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [category, setCategory] = useState<string>("عناية");
+  const [filter, setFilter] = useState<string>("الكل");
+
+  const cats = ["الكل", ...wishCategories.map((c) => c.key)];
+  const filtered = filter === "الكل" ? postponable : postponable.filter((p) => (p.category || "أخرى") === filter);
+
+  // group by category
+  const groups = new Map<string, typeof postponable>();
+  for (const item of filtered) {
+    const key = item.category || "أخرى";
+    if (!groups.has(key)) groups.set(key, [] as typeof postponable);
+    groups.get(key)!.push(item);
+  }
 
   return (
     <>
@@ -457,6 +485,22 @@ function WishlistSection({
         <Card className="mt-4 space-y-3">
           <Input label="الشي اللي تبغينه" value={name} onChange={setName} placeholder="مثال: عطر جديد ✨" />
           <Input label="المبلغ التقريبي" value={amount} onChange={setAmount} type="number" placeholder="0" />
+          <div>
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">التصنيف</span>
+            <div className="flex flex-wrap gap-2">
+              {wishCategories.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => setCategory(c.key)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                    category === c.key ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {c.emoji} {c.key}
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <span className="mb-1 block text-xs font-medium text-muted-foreground">كم تشتهينه؟</span>
             <div className="flex gap-2">
@@ -477,7 +521,7 @@ function WishlistSection({
             <button
               onClick={() => {
                 if (!name || !amount) return;
-                addPostponable({ name, amount: Number(amount), priority });
+                addPostponable({ name, amount: Number(amount), priority, category });
                 setName(""); setAmount(""); setPriority("medium"); setShowForm(false);
               }}
               className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
@@ -487,46 +531,83 @@ function WishlistSection({
         </Card>
       )}
 
-      <div className="mt-4 space-y-2">
+      {postponable.length > 0 && (
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {cats.map((c) => {
+            const active = filter === c;
+            const emoji = c === "الكل" ? "🌷" : wishEmoji(c);
+            return (
+              <button
+                key={c}
+                onClick={() => setFilter(c)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition ${
+                  active ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {emoji} {c}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-3 space-y-4">
         {postponable.length === 0 && (
           <p className="py-10 text-center text-sm text-muted-foreground">
             قائمة رغباتك فاضية — أضيفي شي يفرحك 💖
           </p>
         )}
-        {postponable.map((e) => {
-          const p = priorityMap[e.priority];
+        {[...groups.entries()].map(([cat, items]) => {
+          const total = items.reduce((a, b) => a + b.amount, 0);
           return (
-            <Card key={e.id} className="flex items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-info/10 text-info">
-                <ShoppingBag className="h-5 w-5" />
+            <div key={cat}>
+              <div className="mb-2 flex items-center justify-between px-1">
+                <p className="text-sm font-bold">
+                  <span className="me-1">{wishEmoji(cat)}</span>{cat}
+                  <span className="ms-2 text-[11px] font-normal text-muted-foreground">({items.length})</span>
+                </p>
+                <p className="text-xs font-semibold text-primary">{formatSAR(total)}</p>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate font-semibold">{e.name}</p>
-                  <p className="shrink-0 font-bold">{formatSAR(e.amount)}</p>
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${p.color}`}>{p.label}</span>
-                </div>
+              <div className="space-y-2">
+                {items.map((e) => {
+                  const p = priorityMap[e.priority];
+                  return (
+                    <Card key={e.id} className="flex items-center gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-lg">
+                        {wishEmoji(e.category)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate font-semibold">{e.name}</p>
+                          <p className="shrink-0 font-bold">{formatSAR(e.amount)}</p>
+                        </div>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${p.color}`}>{p.label}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => moveToUrgent(e.id)}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                        aria-label="اشتريتها"
+                        title="اشتريتها — انقلها للالتزامات"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => removePostponable(e.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </Card>
+                  );
+                })}
               </div>
-              <button
-                onClick={() => moveToUrgent(e.id)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary hover:bg-primary/20"
-                aria-label="اشتريتها"
-                title="اشتريتها — انقلها للالتزامات"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </button>
-              <button onClick={() => removePostponable(e.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </Card>
+            </div>
           );
         })}
       </div>
     </>
   );
 }
+
 
 /* ---------------- Debts ---------------- */
 

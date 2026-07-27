@@ -20,8 +20,10 @@ export type PostponableExpense = {
   name: string;
   amount: number;
   priority: "low" | "medium" | "high";
+  category?: string;
   notes?: string;
 };
+
 
 export type Debt = {
   id: string;
@@ -42,7 +44,9 @@ export type WellnessListKey =
   | "habits"
   | "selfDev"
   | "onlineWork"
-  | "achievements";
+  | "achievements"
+  | "concerns"
+  | "workouts";
 
 export type WellnessState = {
   calorieTarget: number;
@@ -57,11 +61,14 @@ export type WellnessState = {
   selfDev: WellnessItem[];
   onlineWork: WellnessItem[];
   achievements: WellnessItem[];
+  concerns: WellnessItem[];
+  workouts: WellnessItem[];
   sleepHours: number;
   mood: "great" | "good" | "meh" | "bad";
   steps: number;
   stepsGoal: number;
 };
+
 
 export type Theme = "light" | "dark";
 
@@ -242,11 +249,22 @@ const defaultWellness: WellnessState = {
   achievements: [
     { id: "ac1", label: "أنجزت مهمة كنت مؤجلتها 🎯", done: false },
   ],
+  concerns: [
+    { id: "cn1", label: "حبوب البشرة 🌸", done: false },
+    { id: "cn2", label: "تساقط الشعر 💇‍♀️", done: false },
+  ],
+  workouts: [
+    { id: "wk1", label: "سكوات × 15 🍑", done: false },
+    { id: "wk2", label: "بلانك 30 ثانية 🪷", done: false },
+    { id: "wk3", label: "تمرين ذراعين بأوزان خفيفة 💪", done: false },
+    { id: "wk4", label: "إطالة 5 دقائق 🧘‍♀️", done: false },
+  ],
   sleepHours: 7,
   mood: "good",
   steps: 0,
   stepsGoal: 8000,
 };
+
 
 function emptyMonth(income = 2000): MonthData {
   return {
