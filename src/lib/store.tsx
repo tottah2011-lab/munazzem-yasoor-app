@@ -99,6 +99,28 @@ export type ExtraIncome = {
   icon?: string;
 };
 
+export type DailyExpense = {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+  category?: string;
+  mistake?: boolean;
+  note?: string;
+};
+
+export type AlinmaPayment = {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+};
+
+export type AlinmaSavings = {
+  total: number;
+  payments: AlinmaPayment[];
+};
+
 export type MonthData = {
   income: number;
   extraIncome: ExtraIncome[];
@@ -106,6 +128,7 @@ export type MonthData = {
   postponable: PostponableExpense[];
   debts: Debt[];
   monthlyPlan: PlanItem[];
+  dailyExpenses: DailyExpense[];
   rewardClaimed: boolean;
   rewardNote?: string;
 };
@@ -117,7 +140,9 @@ type State = {
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
+  alinmaSavings: AlinmaSavings;
 };
+
 
 type Ctx = MonthData & {
   currentMonth: string;
@@ -128,6 +153,7 @@ type Ctx = MonthData & {
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
+  alinmaSavings: AlinmaSavings;
 
   setCurrentMonth: (m: string) => void;
   goPrevMonth: () => void;
@@ -149,6 +175,16 @@ type Ctx = MonthData & {
   addDebt: (d: Omit<Debt, "id" | "paid">) => void;
   payDebt: (id: string) => void;
   removeDebt: (id: string) => void;
+
+  addDaily: (d: Omit<DailyExpense, "id">) => void;
+  updateDaily: (id: string, patch: Partial<DailyExpense>) => void;
+  toggleDailyMistake: (id: string) => void;
+  removeDaily: (id: string) => void;
+
+  setAlinmaTotal: (n: number) => void;
+  addAlinmaPayment: (p: Omit<AlinmaPayment, "id">) => void;
+  removeAlinmaPayment: (id: string) => void;
+  resetAlinma: () => void;
 
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
@@ -173,6 +209,7 @@ type Ctx = MonthData & {
   claimReward: (note?: string) => void;
   unclaimReward: () => void;
 };
+
 
 const STORAGE_KEY = "monazem-masareefi-v2";
 const LEGACY_KEY = "monazem-masareefi-v1";
@@ -274,6 +311,7 @@ function emptyMonth(income = 2000): MonthData {
     postponable: [],
     debts: [],
     monthlyPlan: [],
+    dailyExpenses: [],
     rewardClaimed: false,
   };
 }
@@ -301,6 +339,7 @@ function seedMonth(): MonthData {
       { id: uid(), category: "قهوة", amount: 120, spent: 0, icon: "☕" },
       { id: uid(), category: "ادخار", amount: 300, spent: 0, icon: "🏦" },
     ],
+    dailyExpenses: [],
     rewardClaimed: false,
   };
 }
@@ -317,6 +356,7 @@ function defaultState(): State {
       { id: uid(), name: "صندوق الطوارئ", target: 5000, current: 1200 },
       { id: uid(), name: "رحلة صيفية", target: 3000, current: 500 },
     ],
+    alinmaSavings: { total: 0, payments: [] },
   };
 }
 
@@ -330,6 +370,7 @@ function normalizeMonth(m: Partial<MonthData> | undefined): MonthData {
     postponable: m.postponable ?? [],
     debts: m.debts ?? [],
     monthlyPlan: (m.monthlyPlan ?? []).map((p) => ({ ...p, spent: p.spent ?? 0 })),
+    dailyExpenses: (m.dailyExpenses ?? []).map((d) => ({ ...d })),
     rewardClaimed: m.rewardClaimed ?? false,
     rewardNote: m.rewardNote,
   };
@@ -354,6 +395,7 @@ function loadState(): State {
         theme: parsed.theme ?? "light",
         budgetSplit: parsed.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: parsed.savings ?? [],
+        alinmaSavings: parsed.alinmaSavings ?? { total: 0, payments: [] },
       };
     }
     // migrate legacy v1
@@ -368,6 +410,7 @@ function loadState(): State {
         postponable: p.postponable ?? [],
         debts: p.debts ?? [],
         monthlyPlan: p.monthlyPlan ?? [],
+        dailyExpenses: [],
         rewardClaimed: false,
       });
       return {
@@ -377,10 +420,12 @@ function loadState(): State {
         theme: p.theme ?? "light",
         budgetSplit: p.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: p.savings ?? [],
+        alinmaSavings: { total: 0, payments: [] },
       };
     }
   } catch {}
   return defaultState();
+
 }
 
 const StoreContext = createContext<Ctx | null>(null);
@@ -428,6 +473,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       theme: state.theme,
       budgetSplit: state.budgetSplit,
       savings: state.savings,
+      alinmaSavings: state.alinmaSavings,
+
+      addDaily: (d) => {
+        if (d.mistake) {
+          toast.warning("سُجّل مصروف بطريقة غلط ⚠️", { description: `${d.name} — ${d.amount} ر.س، خذيها درس 💗` });
+        } else {
+          toast.success("تم تسجيل مصروفك اليوم ✨", { description: `${d.name} — ${d.amount} ر.س` });
+        }
+        patchMonth((m) => ({ dailyExpenses: [{ ...d, id: uid() }, ...m.dailyExpenses] }));
+      },
+      updateDaily: (id, patch) =>
+        patchMonth((m) => ({ dailyExpenses: m.dailyExpenses.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      toggleDailyMistake: (id) => {
+        const item = cm.dailyExpenses.find((x) => x.id === id);
+        if (item && !item.mistake) toast.warning("علّمتيه كصرف غلط ⚠️", { description: item.name });
+        patchMonth((m) => ({
+          dailyExpenses: m.dailyExpenses.map((x) => (x.id === id ? { ...x, mistake: !x.mistake } : x)),
+        }));
+      },
+      removeDaily: (id) =>
+        patchMonth((m) => ({ dailyExpenses: m.dailyExpenses.filter((x) => x.id !== id) })),
+
+      setAlinmaTotal: (n) =>
+        setState((s) => ({ ...s, alinmaSavings: { ...s.alinmaSavings, total: Math.max(0, n) } })),
+      addAlinmaPayment: (p) => {
+        setState((s) => {
+          const paid = s.alinmaSavings.payments.reduce((a, b) => a + b.amount, 0) + p.amount;
+          const left = Math.max(0, s.alinmaSavings.total - paid);
+          toast.success("سداد جديد لادخار الإنماء 🏦💚", {
+            description: left === 0 ? "مبروك! سددتِ كامل المبلغ 🎊" : `دفعتِ ${p.amount} ر.س — متبقي ${left} ر.س`,
+          });
+          return {
+            ...s,
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              payments: [{ ...p, id: uid() }, ...s.alinmaSavings.payments],
+            },
+          };
+        });
+      },
+      removeAlinmaPayment: (id) =>
+        setState((s) => ({
+          ...s,
+          alinmaSavings: { ...s.alinmaSavings, payments: s.alinmaSavings.payments.filter((x) => x.id !== id) },
+        })),
+      resetAlinma: () =>
+        setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [] } })),
+
 
       setCurrentMonth: (m) =>
         setState((s) => ({
