@@ -99,6 +99,28 @@ export type ExtraIncome = {
   icon?: string;
 };
 
+export type DailyExpense = {
+  id: string;
+  name: string;
+  amount: number;
+  date: string;
+  category?: string;
+  mistake?: boolean;
+  note?: string;
+};
+
+export type AlinmaPayment = {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+};
+
+export type AlinmaSavings = {
+  total: number;
+  payments: AlinmaPayment[];
+};
+
 export type MonthData = {
   income: number;
   extraIncome: ExtraIncome[];
@@ -106,6 +128,7 @@ export type MonthData = {
   postponable: PostponableExpense[];
   debts: Debt[];
   monthlyPlan: PlanItem[];
+  dailyExpenses: DailyExpense[];
   rewardClaimed: boolean;
   rewardNote?: string;
 };
@@ -117,7 +140,9 @@ type State = {
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
+  alinmaSavings: AlinmaSavings;
 };
+
 
 type Ctx = MonthData & {
   currentMonth: string;
@@ -128,6 +153,7 @@ type Ctx = MonthData & {
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
+  alinmaSavings: AlinmaSavings;
 
   setCurrentMonth: (m: string) => void;
   goPrevMonth: () => void;
@@ -149,6 +175,16 @@ type Ctx = MonthData & {
   addDebt: (d: Omit<Debt, "id" | "paid">) => void;
   payDebt: (id: string) => void;
   removeDebt: (id: string) => void;
+
+  addDaily: (d: Omit<DailyExpense, "id">) => void;
+  updateDaily: (id: string, patch: Partial<DailyExpense>) => void;
+  toggleDailyMistake: (id: string) => void;
+  removeDaily: (id: string) => void;
+
+  setAlinmaTotal: (n: number) => void;
+  addAlinmaPayment: (p: Omit<AlinmaPayment, "id">) => void;
+  removeAlinmaPayment: (id: string) => void;
+  resetAlinma: () => void;
 
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
@@ -173,6 +209,7 @@ type Ctx = MonthData & {
   claimReward: (note?: string) => void;
   unclaimReward: () => void;
 };
+
 
 const STORAGE_KEY = "monazem-masareefi-v2";
 const LEGACY_KEY = "monazem-masareefi-v1";
