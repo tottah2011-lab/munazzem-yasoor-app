@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity, Award, Check, Droplets, Footprints, Laptop, Minus, Moon, Pencil, Plus, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
+import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { useStore, type WellnessListKey, type WellnessItem } from "@/lib/store";
 
@@ -110,8 +110,21 @@ function Wellness() {
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection
+        title="مشاكل أبغى أحلها 💗"
+        subtitle="اكتبي مشكلتك، ولما تحلينها ✓ نحتفل فيها"
+        emptyHint="فاضية — أضيفي أول مشكلة تبغين تشتغلين عليها ✨"
+        doneLabel="محلولة"
+        icon={HeartPulse} listKey="concerns" items={wellness.concerns}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection
+        title="جدول تمارين المقاومة 🏋️‍♀️"
+        subtitle="تماريني اليومية — سوّي ✓ لما تخلصين التمرين"
+        icon={Dumbbell} listKey="workouts" items={wellness.workouts}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="عادات يومية ✨" icon={Activity} listKey="habits" items={wellness.habits}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+
 
       <ChecklistSection title="تطوير الذات 📚" icon={Sparkles} listKey="selfDev" items={wellness.selfDev}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
