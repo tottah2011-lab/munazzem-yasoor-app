@@ -473,6 +473,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       theme: state.theme,
       budgetSplit: state.budgetSplit,
       savings: state.savings,
+      alinmaSavings: state.alinmaSavings,
+
+      addDaily: (d) => {
+        if (d.mistake) {
+          toast.warning("سُجّل مصروف بطريقة غلط ⚠️", { description: `${d.name} — ${d.amount} ر.س، خذيها درس 💗` });
+        } else {
+          toast.success("تم تسجيل مصروفك اليوم ✨", { description: `${d.name} — ${d.amount} ر.س` });
+        }
+        patchMonth((m) => ({ dailyExpenses: [{ ...d, id: uid() }, ...m.dailyExpenses] }));
+      },
+      updateDaily: (id, patch) =>
+        patchMonth((m) => ({ dailyExpenses: m.dailyExpenses.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      toggleDailyMistake: (id) => {
+        const item = cm.dailyExpenses.find((x) => x.id === id);
+        if (item && !item.mistake) toast.warning("علّمتيه كصرف غلط ⚠️", { description: item.name });
+        patchMonth((m) => ({
+          dailyExpenses: m.dailyExpenses.map((x) => (x.id === id ? { ...x, mistake: !x.mistake } : x)),
+        }));
+      },
+      removeDaily: (id) =>
+        patchMonth((m) => ({ dailyExpenses: m.dailyExpenses.filter((x) => x.id !== id) })),
+
+      setAlinmaTotal: (n) =>
+        setState((s) => ({ ...s, alinmaSavings: { ...s.alinmaSavings, total: Math.max(0, n) } })),
+      addAlinmaPayment: (p) => {
+        setState((s) => {
+          const paid = s.alinmaSavings.payments.reduce((a, b) => a + b.amount, 0) + p.amount;
+          const left = Math.max(0, s.alinmaSavings.total - paid);
+          toast.success("سداد جديد لادخار الإنماء 🏦💚", {
+            description: left === 0 ? "مبروك! سددتِ كامل المبلغ 🎊" : `دفعتِ ${p.amount} ر.س — متبقي ${left} ر.س`,
+          });
+          return {
+            ...s,
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              payments: [{ ...p, id: uid() }, ...s.alinmaSavings.payments],
+            },
+          };
+        });
+      },
+      removeAlinmaPayment: (id) =>
+        setState((s) => ({
+          ...s,
+          alinmaSavings: { ...s.alinmaSavings, payments: s.alinmaSavings.payments.filter((x) => x.id !== id) },
+        })),
+      resetAlinma: () =>
+        setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [] } })),
+
 
       setCurrentMonth: (m) =>
         setState((s) => ({
