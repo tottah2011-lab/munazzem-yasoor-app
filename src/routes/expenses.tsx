@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  ArrowUp, Banknote, CalendarClock, Check, HandCoins, Heart, Minus, PiggyBank,
-  Plus, Search, ShoppingBag, Sparkles, Target, Trash2, Wallet,
+  AlertTriangle, ArrowUp, Banknote, CalendarClock, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
+  Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet,
 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, useStore } from "@/lib/store";
 import { Input } from "./urgent";
+
 
 export const Route = createFileRoute("/expenses")({
   head: () => ({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/expenses")({
   component: ExpensesPage,
 });
 
-type Tab = "installment" | "commitments" | "savings" | "wishlist" | "debts";
+type Tab = "installment" | "commitments" | "daily" | "wishlist" | "alinma";
 
 const priorityMap = {
   high: { label: "لازم قريب", color: "text-destructive bg-destructive/10" },
@@ -39,37 +40,40 @@ function ExpensesPage() {
   const installmentMonthly = installments.reduce((a, b) => a + b.amount, 0);
   const commitmentsTotal = commitments.reduce((a, b) => a + b.amount, 0);
   const commitmentsUnpaid = commitments.filter((x) => !x.paid).reduce((a, b) => a + b.amount, 0);
-  const savingsTotal = s.savings.reduce((a, b) => a + b.current, 0);
   const wishlistTotal = s.postponable.reduce((a, b) => a + b.amount, 0);
-  const debtUnpaid = s.debts.filter((x) => !x.paid).reduce((a, b) => a + b.amount, 0);
-  const debtPaid = s.debts.filter((x) => x.paid).reduce((a, b) => a + b.amount, 0);
+
+  const dailyTotal = s.dailyExpenses.reduce((a, b) => a + b.amount, 0);
+  const dailyMistakes = s.dailyExpenses.filter((d) => d.mistake).reduce((a, b) => a + b.amount, 0);
+
+  const alinmaPaid = s.alinmaSavings.payments.reduce((a, b) => a + b.amount, 0);
+  const alinmaLeft = Math.max(0, s.alinmaSavings.total - alinmaPaid);
 
   const allPaidCommit = commitments.length > 0 && commitments.every((x) => x.paid);
-  const allPaidDebts = s.debts.length > 0 && s.debts.every((x) => x.paid);
   const encourage =
-    allPaidCommit && allPaidDebts
+    allPaidCommit && alinmaLeft === 0 && s.alinmaSavings.total > 0
       ? "خرافي! سددتِ كل شيء 🎊 استمري بهذا الالتزام"
       : allPaidCommit
         ? "أحسنتِ! التزاماتك الشهرية كلها مدفوعة ✅"
-        : allPaidDebts
-          ? "مبروك! لا توجد ديون معلّقة 💚"
+        : dailyMistakes > 0
+          ? "خذي نفس عميق 💗 وحاولي تقللين المصاريف الغلط بكرة"
           : "خطوة خطوة، ميزانيتك في تحسّن مستمر ✨";
 
   const tabs: { key: Tab; label: string; icon: typeof Wallet; count: number; hint: string }[] = [
     { key: "installment", label: "تقسيط", icon: CalendarClock, count: installments.length, hint: `${formatSAR(installmentMonthly)}/شهر` },
     { key: "commitments", label: "التزامات شهرية", icon: Wallet, count: commitments.length, hint: formatSAR(commitmentsUnpaid) },
-    { key: "savings", label: "الادخار", icon: PiggyBank, count: s.savings.length, hint: formatSAR(savingsTotal) },
+    { key: "daily", label: "يوميّة", icon: Sun, count: s.dailyExpenses.length, hint: formatSAR(dailyTotal) },
     { key: "wishlist", label: "أشياء أبغي اشتريها", icon: ShoppingBag, count: s.postponable.length, hint: formatSAR(wishlistTotal) },
-    { key: "debts", label: "الديون", icon: HandCoins, count: s.debts.length, hint: formatSAR(debtUnpaid) },
+    { key: "alinma", label: "ادخار الإنماء", icon: Landmark, count: s.alinmaSavings.payments.length, hint: formatSAR(alinmaLeft) },
   ];
 
   const addLabel: Record<Tab, string> = {
     installment: "إضافة تقسيط جديد",
     commitments: "إضافة التزام شهري",
-    savings: "إضافة هدف ادخار",
+    daily: "أضيفي مصروف اليوم ☀️",
     wishlist: "أضيفي شي تحلمين فيه ✨",
-    debts: "إضافة دين",
+    alinma: "تسجيل سداد للإنماء 🏦",
   };
+
 
   return (
     <AppShell title="خزنة مصاريفي 💚" subtitle="تقسيط · التزامات · ادخار · رغبات">
