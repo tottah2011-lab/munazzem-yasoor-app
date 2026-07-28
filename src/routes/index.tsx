@@ -90,13 +90,13 @@ function Dashboard() {
         </div>
         <div className="mt-5 flex items-center justify-between text-xs">
           <div>
-            <p className="opacity-80">الراتب</p>
+            <p className="opacity-80">الراتب الشهري</p>
             <p className="font-bold">{formatSAR(income)}</p>
           </div>
-          {totals.extrasTotal > 0 && (
+          {extrasTotal > 0 && (
             <div>
-              <p className="opacity-80">+ إضافي</p>
-              <p className="font-bold">{formatSAR(totals.extrasTotal)}</p>
+              <p className="opacity-80">إضافي (ادخار)</p>
+              <p className="font-bold">{formatSAR(extrasTotal)}</p>
             </div>
           )}
           <Link to="/settings" className="flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 font-medium">
@@ -105,13 +105,51 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* موعد السداد الثابت */}
+      <Card
+        className={`mt-4 flex items-center gap-3 border ${
+          isLate ? "border-destructive/30 bg-destructive/5" : "border-info/20 bg-info/5"
+        }`}
+      >
+        <div
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+            isLate ? "bg-destructive/15 text-destructive" : "bg-info/15 text-info"
+          }`}
+        >
+          <CalendarX2 className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold">فترة السداد: 1 من كل شهر 🗓️</p>
+          <p className={`mt-0.5 text-xs ${isLate ? "text-destructive" : "text-muted-foreground"}`}>
+            {isLate
+              ? `تأخرتِ ${daysLate} يوم عن ${paymentDueDate} — فيه التزامات ما انسددت ⚠️`
+              : `الاستحقاق ${paymentDueDate} — كل شي تمام 💚`}
+          </p>
+        </div>
+      </Card>
+
+      <Link
+        to="/guide"
+        className="mt-4 flex items-center gap-3 rounded-3xl gradient-info p-4 text-primary-foreground shadow-soft transition hover:scale-[1.01]"
+      >
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20">
+          <Compass className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold">وش أسوي بفلوسي؟ 🧭</p>
+          <p className="mt-0.5 text-xs opacity-90">دليل بسيط يوجّهك خطوة بخطوة لإدارة مصاريفك</p>
+        </div>
+        <ArrowLeft className="h-4 w-4 shrink-0" />
+      </Link>
+
       {/* Stat grid */}
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <StatCard label="مصاريف عاجلة" value={formatSAR(totals.urgentTotal)} icon={Wallet} to="/expenses" tone="from-primary/20 to-primary/5" />
-        <StatCard label="قابلة للتأجيل" value={formatSAR(totals.postponableTotal)} icon={Clock} to="/expenses" tone="from-info/20 to-info/5" />
-        <StatCard label="ديون غير مسددة" value={formatSAR(totals.unpaidDebts)} icon={HandCoins} to="/expenses" tone="from-destructive/20 to-destructive/5" />
-        <StatCard label="دخل إضافي" value={formatSAR(totals.extrasTotal)} icon={TrendingUp} to="/planner" tone="from-success/20 to-success/5" />
+        <StatCard label="تقسيط (شهريًا)" value={formatSAR(totals.installmentMonthly)} icon={CalendarClock} to="/expenses" tone="from-info/20 to-info/5" />
+        <StatCard label="التزامات شهرية" value={formatSAR(totals.commitmentsTotal)} icon={Wallet} to="/expenses" tone="from-primary/20 to-primary/5" />
+        <StatCard label="صرف طارئ" value={formatSAR(totals.emergencyTotal)} icon={Zap} to="/expenses" tone="from-warning/20 to-warning/5" />
+        <StatCard label="مدخراتك" value={formatSAR(extrasTotal + surplusTotal)} icon={PiggyBank} to="/planner" tone="from-success/20 to-success/5" />
       </div>
+
 
       <SectionTitle>توزيع المصاريف 🎨</SectionTitle>
       <Card>
