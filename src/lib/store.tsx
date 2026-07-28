@@ -192,6 +192,11 @@ type Ctx = MonthData & {
   addPostponable: (e: Omit<PostponableExpense, "id">) => void;
   removePostponable: (id: string) => void;
   moveToUrgent: (id: string) => void;
+  toggleWishBought: (id: string) => void;
+
+  saveSurplus: (amount: number, note?: string) => void;
+  removeSurplus: (id: string) => void;
+
 
   addDebt: (d: Omit<Debt, "id" | "paid">) => void;
   payDebt: (id: string) => void;
