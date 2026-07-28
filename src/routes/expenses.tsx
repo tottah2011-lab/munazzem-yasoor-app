@@ -77,7 +77,31 @@ function ExpensesPage() {
 
   return (
     <AppShell title="خزنة مصاريفي 💚" subtitle="تقسيط · التزامات · صرف طارئ · رغبات">
-      <Card className="flex items-center gap-3 border border-success/20 bg-success/5">
+      <Card
+        className={`flex items-center gap-3 border ${
+          s.isLate ? "border-destructive/30 bg-destructive/5" : "border-info/20 bg-info/5"
+        }`}
+      >
+        <div
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+            s.isLate ? "bg-destructive/15 text-destructive" : "bg-info/15 text-info"
+          }`}
+        >
+          <CalendarX2 className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold">
+            موعد السداد ثابت: 1 من كل شهر 🗓️
+          </p>
+          <p className={`mt-0.5 text-xs ${s.isLate ? "text-destructive" : "text-muted-foreground"}`}>
+            {s.isLate
+              ? `تأخرتِ ${s.daysLate} يوم عن موعد ${s.paymentDueDate} — فيه التزامات ما انسددت ⚠️`
+              : `الاستحقاق: ${s.paymentDueDate} — كل شي تمام 💚`}
+          </p>
+        </div>
+      </Card>
+
+      <Card className="mt-3 flex items-center gap-3 border border-success/20 bg-success/5">
         <div className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
           <Sparkles className="h-5 w-5" />
         </div>
@@ -467,7 +491,7 @@ function wishEmoji(cat?: string) {
 function WishlistSection({
   showForm, setShowForm,
 }: { showForm: boolean; setShowForm: (v: boolean) => void }) {
-  const { postponable, addPostponable, removePostponable, moveToUrgent } = useStore();
+  const { postponable, addPostponable, removePostponable, toggleWishBought } = useStore();
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
@@ -578,26 +602,49 @@ function WishlistSection({
                 {items.map((e) => {
                   const p = priorityMap[e.priority];
                   return (
-                    <Card key={e.id} className="flex items-center gap-3">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-lg">
-                        {wishEmoji(e.category)}
+                    <Card
+                      key={e.id}
+                      className={`flex items-center gap-3 ${
+                        e.bought ? "border border-success/30 bg-success/5" : ""
+                      }`}
+                    >
+                      <div
+                        className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-lg ${
+                          e.bought ? "bg-success/15 text-success" : "bg-primary/10 text-primary"
+                        }`}
+                      >
+                        {e.bought ? "🎀" : wishEmoji(e.category)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate font-semibold">{e.name}</p>
-                          <p className="shrink-0 font-bold">{formatSAR(e.amount)}</p>
+                          <p className={`truncate font-semibold ${e.bought ? "line-through opacity-70" : ""}`}>
+                            {e.name}
+                          </p>
+                          <p className={`shrink-0 font-bold ${e.bought ? "line-through opacity-70" : ""}`}>
+                            {formatSAR(e.amount)}
+                          </p>
                         </div>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${p.color}`}>{p.label}</span>
+                          {e.bought ? (
+                            <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success">
+                              تحقق حلمك 🎉 {e.boughtDate}
+                            </span>
+                          ) : (
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${p.color}`}>{p.label}</span>
+                          )}
                         </div>
                       </div>
                       <button
-                        onClick={() => moveToUrgent(e.id)}
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                        onClick={() => toggleWishBought(e.id)}
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
+                          e.bought
+                            ? "bg-success text-success-foreground"
+                            : "bg-primary/10 text-primary hover:bg-primary/20"
+                        }`}
                         aria-label="اشتريتها"
-                        title="اشتريتها — انقلها للالتزامات"
+                        title="اشتريتها — يتشطب عليها ويبقى في القائمة"
                       >
-                        <ArrowUp className="h-4 w-4" />
+                        <Check className="h-4 w-4" />
                       </button>
                       <button onClick={() => removePostponable(e.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
                         <Trash2 className="h-4 w-4" />
