@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarPlus, ClipboardList, Gift, Minus, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Target, Trash2, TrendingUp } from "lucide-react";
+import { CalendarPlus, ClipboardList, Gift, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Trash2, TrendingUp } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
@@ -36,12 +36,7 @@ function PlannerPage() {
         onReset={s.resetPlanSpent}
       />
 
-      <SavingsSection
-        savings={s.savings}
-        onAdd={s.addSavingsGoal}
-        onAddAmount={s.addToSavings}
-        onRemove={s.removeSavingsGoal}
-      />
+      <SurplusSection />
     </AppShell>
   );
 }
@@ -456,141 +451,104 @@ function PlanItemCard({
   );
 }
 
-function SavingsSection({
-  savings, onAdd, onAddAmount, onRemove,
-}: {
-  savings: ReturnType<typeof useStore>["savings"];
-  onAdd: ReturnType<typeof useStore>["addSavingsGoal"];
-  onAddAmount: ReturnType<typeof useStore>["addToSavings"];
-  onRemove: ReturnType<typeof useStore>["removeSavingsGoal"];
-}) {
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const [current, setCurrent] = useState("");
+function SurplusSection() {
+  const {
+    totalIncome, urgent, dailyExpenses, monthlyPlan, surplusEntries, surplusTotal,
+    extrasTotal, saveSurplus, removeSurplus, currentMonth,
+  } = useStore();
+  const [note, setNote] = useState("");
+  const [custom, setCustom] = useState("");
 
-  const totalSaved = useMemo(() => savings.reduce((s, g) => s + g.current, 0), [savings]);
-  const totalTarget = useMemo(() => savings.reduce((s, g) => s + g.target, 0), [savings]);
+  const spent =
+    urgent.reduce((a, b) => a + b.amount, 0) +
+    dailyExpenses.reduce((a, b) => a + b.amount, 0) +
+    monthlyPlan.reduce((a, b) => a + (b.spent || 0), 0);
+  const surplus = Math.max(0, Math.round(totalIncome - spent));
+  const savedThisMonth = surplusEntries
+    .filter((e) => e.month === currentMonth)
+    .reduce((a, b) => a + b.amount, 0);
 
   return (
     <>
-      <SectionTitle
-        action={
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground shadow-soft"
-            aria-label="إضافة هدف"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        }
-      >
-        المدخرات وأهدافك 🎯
-      </SectionTitle>
+      <SectionTitle>الفائض من الشهر ➜ ادخار 🏦</SectionTitle>
 
-      <Card>
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
-            <PiggyBank className="h-5 w-5" />
+      <div className="relative overflow-hidden rounded-3xl gradient-success p-5 text-primary-foreground shadow-elegant">
+        <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+        <div className="flex items-center gap-2 text-xs opacity-90">
+          <PiggyBank className="h-4 w-4" />
+          <span>فائض هذا الشهر</span>
+        </div>
+        <p className="mt-1 text-3xl font-black">{formatSAR(surplus)}</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+          <div className="rounded-2xl bg-white/15 p-2 text-center">
+            <p className="opacity-80">إجمالي مدخراتك</p>
+            <p className="mt-0.5 font-bold">{formatSAR(surplusTotal + extrasTotal)}</p>
           </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">إجمالي المدّخر</p>
-            <p className="text-lg font-bold">{formatSAR(totalSaved)}</p>
-          </div>
-          <div className="text-left">
-            <p className="text-xs text-muted-foreground">من هدف</p>
-            <p className="text-sm font-semibold">{formatSAR(totalTarget)}</p>
+          <div className="rounded-2xl bg-white/15 p-2 text-center">
+            <p className="opacity-80">ادّخرتِ هالشهر</p>
+            <p className="mt-0.5 font-bold">{formatSAR(savedThisMonth)}</p>
           </div>
         </div>
+      </div>
+
+      <Card className="mt-3 space-y-3">
+        <p className="text-xs text-muted-foreground">
+          حوّلي الفائض لمدخراتك وخليه يكبر معك 💗
+        </p>
+        <Input label="ملاحظة (اختياري)" value={note} onChange={setNote} placeholder="مثال: فائض ديسمبر" />
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            placeholder="مبلغ مخصص"
+            className="w-full rounded-full border border-border bg-input/50 px-3 py-2 text-center text-sm outline-none focus:border-primary"
+          />
+          <button
+            onClick={() => {
+              const v = Number(custom);
+              if (v > 0) { saveSurplus(v, note || undefined); setCustom(""); setNote(""); }
+            }}
+            className="shrink-0 rounded-full bg-muted px-4 py-2 text-xs font-semibold"
+          >
+            ادّخري المبلغ
+          </button>
+        </div>
+        <button
+          disabled={surplus <= 0}
+          onClick={() => { saveSurplus(surplus, note || `فائض ${currentMonth}`); setNote(""); }}
+          className="w-full rounded-full gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-soft disabled:opacity-40"
+        >
+          🎉 حوّلي كل الفائض ({formatSAR(surplus)}) للادخار
+        </button>
       </Card>
 
-      {showForm && (
-        <Card className="mt-3 space-y-3">
-          <Input label="اسم الهدف" value={name} onChange={setName} placeholder="مثال: رحلة" />
-          <Input label="المبلغ المستهدف" value={target} onChange={setTarget} type="number" placeholder="0" />
-          <Input label="المدّخر حاليًا" value={current} onChange={setCurrent} type="number" placeholder="0" />
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => {
-                if (!name || !target) return;
-                onAdd({ name, target: Number(target), current: Number(current) || 0 });
-                setName(""); setTarget(""); setCurrent(""); setShowForm(false);
-              }}
-              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
-            >حفظ</button>
-            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
-          </div>
-        </Card>
-      )}
-
       <div className="mt-3 space-y-2">
-        {savings.length === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">ما فيه أهداف ادخار بعد — ابدئي حلمك 💭</p>
+        {surplusEntries.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            ما ادّخرتِ فائض بعد — أول تحويل بيكون بداية حلوة 🌸
+          </p>
         )}
-        {savings.map((g) => {
-          const pct = Math.min(100, Math.round((g.current / Math.max(g.target, 1)) * 100));
-          return (
-            <Card key={g.id}>
-              <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-success/15 text-success">
-                  <Target className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold">{g.name}</p>
-                    <p className="shrink-0 text-sm font-bold">
-                      {formatSAR(g.current)} <span className="text-muted-foreground">/ {formatSAR(g.target)}</span>
-                    </p>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-success transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{pct}%</p>
-                </div>
+        {surplusEntries.map((e) => (
+          <Card key={e.id} className="flex items-center gap-3 border border-success/20 bg-success/5">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success/15 text-lg">🏦</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate font-semibold">{e.note || `فائض ${e.month}`}</p>
+                <p className="shrink-0 font-bold text-success">+{formatSAR(e.amount)}</p>
               </div>
-              <div className="mt-3 flex items-center gap-2">
-                <QuickAmount onAmount={(v) => onAddAmount(g.id, v)} />
-                <button
-                  onClick={() => onRemove(g.id)}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground hover:text-destructive"
-                  aria-label="حذف"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </Card>
-          );
-        })}
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{e.date}</p>
+            </div>
+            <button
+              onClick={() => removeSurplus(e.id)}
+              className="shrink-0 text-muted-foreground hover:text-destructive"
+              aria-label="حذف"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </Card>
+        ))}
       </div>
     </>
-  );
-}
-
-function QuickAmount({ onAmount }: { onAmount: (n: number) => void }) {
-  const [val, setVal] = useState("");
-  return (
-    <div className="flex flex-1 items-center gap-1.5">
-      <button
-        onClick={() => val && onAmount(-Math.abs(Number(val)))}
-        className="grid h-9 w-9 place-items-center rounded-full bg-muted"
-        aria-label="سحب"
-      >
-        <Minus className="h-4 w-4" />
-      </button>
-      <input
-        type="number"
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        placeholder="مبلغ"
-        className="w-full rounded-full border border-border bg-input/50 px-3 py-2 text-center text-sm outline-none focus:border-primary"
-      />
-      <button
-        onClick={() => { if (val) { onAmount(Math.abs(Number(val))); setVal(""); } }}
-        className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
-        aria-label="إيداع"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
-    </div>
   );
 }

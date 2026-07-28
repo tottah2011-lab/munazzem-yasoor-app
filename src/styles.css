@@ -79,6 +79,7 @@
 
   --gradient-primary: linear-gradient(135deg, oklch(0.78 0.16 350), oklch(0.76 0.13 310));
   --gradient-info: linear-gradient(135deg, oklch(0.78 0.12 300), oklch(0.82 0.1 260));
+  --gradient-success: linear-gradient(135deg, oklch(0.76 0.14 165), oklch(0.8 0.12 195));
   --gradient-surface: linear-gradient(180deg, oklch(1 0 0 / 0.75), oklch(1 0 0 / 0.45));
   --shadow-soft: 0 6px 24px -10px oklch(0.55 0.18 350 / 0.25);
   --shadow-elegant: 0 20px 40px -20px oklch(0.55 0.18 350 / 0.35);
@@ -119,6 +120,7 @@
 
   --gradient-primary: linear-gradient(135deg, oklch(0.55 0.16 165), oklch(0.5 0.12 200));
   --gradient-info: linear-gradient(135deg, oklch(0.45 0.14 235), oklch(0.55 0.1 220));
+  --gradient-success: linear-gradient(135deg, oklch(0.5 0.13 165), oklch(0.55 0.11 195));
   --gradient-surface: linear-gradient(180deg, oklch(1 0 0 / 0.06), oklch(1 0 0 / 0.02));
   --shadow-soft: 0 4px 20px -8px oklch(0 0 0 / 0.4);
   --shadow-elegant: 0 20px 40px -20px oklch(0 0 0 / 0.5);
@@ -152,6 +154,9 @@
 }
 @utility gradient-info {
   background: var(--gradient-info);
+}
+@utility gradient-success {
+  background: var(--gradient-success);
 }
 @utility shadow-soft {
   box-shadow: var(--shadow-soft);

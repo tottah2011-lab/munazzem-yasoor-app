@@ -22,7 +22,10 @@ export type PostponableExpense = {
   priority: "low" | "medium" | "high";
   category?: string;
   notes?: string;
+  bought?: boolean;
+  boughtDate?: string;
 };
+
 
 
 export type Debt = {
@@ -121,6 +124,15 @@ export type AlinmaSavings = {
   payments: AlinmaPayment[];
 };
 
+export type SurplusEntry = {
+  id: string;
+  month: string; // YYYY-MM
+  amount: number;
+  date: string;
+  note?: string;
+};
+
+
 export type MonthData = {
   income: number;
   extraIncome: ExtraIncome[];
@@ -141,6 +153,7 @@ type State = {
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
+  surplusEntries: SurplusEntry[];
 };
 
 
@@ -149,11 +162,19 @@ type Ctx = MonthData & {
   months: Record<string, MonthData>;
   monthKeys: string[];
   totalIncome: number;
+  extrasTotal: number;
+  savedFromExtras: number;
+  surplusEntries: SurplusEntry[];
+  surplusTotal: number;
+  paymentDueDate: string;
+  isLate: boolean;
+  daysLate: number;
   wellness: WellnessState;
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
+
 
   setCurrentMonth: (m: string) => void;
   goPrevMonth: () => void;
@@ -171,6 +192,11 @@ type Ctx = MonthData & {
   addPostponable: (e: Omit<PostponableExpense, "id">) => void;
   removePostponable: (id: string) => void;
   moveToUrgent: (id: string) => void;
+  toggleWishBought: (id: string) => void;
+
+  saveSurplus: (amount: number, note?: string) => void;
+  removeSurplus: (id: string) => void;
+
 
   addDebt: (d: Omit<Debt, "id" | "paid">) => void;
   payDebt: (id: string) => void;
@@ -225,6 +251,23 @@ const encouragements = [
 const pickEncouragement = () => encouragements[Math.floor(Math.random() * encouragements.length)];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+/** يوم السداد ثابت: 1 من كل شهر ميلادي */
+export const PAYMENT_DAY = 1;
+
+export function paymentDueDateOf(month: string) {
+  return `${month}-${String(PAYMENT_DAY).padStart(2, "0")}`;
+}
+
+/** كم يوم مرّ على موعد السداد (1 من الشهر) — 0 يعني ما تأخرتِ */
+export function daysLateFor(month: string, now: Date = new Date()) {
+  const [y, m] = month.split("-").map(Number);
+  const due = new Date(y, (m || 1) - 1, PAYMENT_DAY);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
+  return diff > 0 ? diff : 0;
+}
+
 
 export function monthKey(d: Date = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -357,6 +400,7 @@ function defaultState(): State {
       { id: uid(), name: "رحلة صيفية", target: 3000, current: 500 },
     ],
     alinmaSavings: { total: 0, payments: [] },
+    surplusEntries: [],
   };
 }
 
@@ -396,6 +440,7 @@ function loadState(): State {
         budgetSplit: parsed.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: parsed.savings ?? [],
         alinmaSavings: parsed.alinmaSavings ?? { total: 0, payments: [] },
+        surplusEntries: parsed.surplusEntries ?? [],
       };
     }
     // migrate legacy v1
@@ -421,6 +466,7 @@ function loadState(): State {
         budgetSplit: p.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: p.savings ?? [],
         alinmaSavings: { total: 0, payments: [] },
+        surplusEntries: [],
       };
     }
   } catch {}
@@ -461,7 +507,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         };
       });
 
-    const totalIncome = cm.income + cm.extraIncome.reduce((a, b) => a + b.amount, 0);
+    // الدخل الشهري = الراتب فقط. الدخل الإضافي/العمل الحر يُعتبر ادخارًا ولا يُحتسب.
+    const totalIncome = cm.income;
+    const extrasTotal = cm.extraIncome.reduce((a, b) => a + b.amount, 0);
+    const surplusTotal = state.surplusEntries.reduce((a, b) => a + b.amount, 0);
+    const daysLate = daysLateFor(state.currentMonth);
+    const unpaidCommitments = cm.urgent.filter(
+      (x) => !x.paid && (!x.installment || x.installment.monthsPaid < x.installment.monthsTotal),
+    );
 
     return {
       ...cm,
@@ -469,11 +522,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       months: state.months,
       monthKeys: Object.keys(state.months).sort(),
       totalIncome,
+      extrasTotal,
+      savedFromExtras: extrasTotal,
+      surplusEntries: state.surplusEntries,
+      surplusTotal,
+      paymentDueDate: paymentDueDateOf(state.currentMonth),
+      isLate: daysLate > 0 && unpaidCommitments.length > 0,
+      daysLate,
       wellness: state.wellness,
       theme: state.theme,
       budgetSplit: state.budgetSplit,
       savings: state.savings,
       alinmaSavings: state.alinmaSavings,
+
+      toggleWishBought: (id) => {
+        const item = cm.postponable.find((x) => x.id === id);
+        if (item && !item.bought) {
+          toast.success("مبروك! حققتِ حلمك 🎀", { description: `${item.name} — انشطب من قائمتك بفرح ✨` });
+        }
+        patchMonth((m) => ({
+          postponable: m.postponable.map((x) =>
+            x.id === id
+              ? { ...x, bought: !x.bought, boughtDate: !x.bought ? new Date().toISOString().slice(0, 10) : undefined }
+              : x,
+          ),
+        }));
+      },
+
+      saveSurplus: (amount, note) => {
+        if (amount <= 0) return;
+        toast.success("الفائض تحوّل لادخار 🎉🏦", { description: `${amount} ر.س انضافت لمدخراتك — فخورة فيك 💗` });
+        setState((s) => ({
+          ...s,
+          surplusEntries: [
+            { id: uid(), month: s.currentMonth, amount, date: new Date().toISOString().slice(0, 10), note },
+            ...s.surplusEntries,
+          ],
+        }));
+      },
+      removeSurplus: (id) =>
+        setState((s) => ({ ...s, surplusEntries: s.surplusEntries.filter((x) => x.id !== id) })),
+
 
       addDaily: (d) => {
         if (d.mistake) {
