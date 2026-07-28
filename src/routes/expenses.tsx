@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  AlertTriangle, ArrowUp, Banknote, CalendarClock, CalendarX2, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
+  AlertTriangle, Banknote, CalendarClock, CalendarX2, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
   Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet, Zap,
 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
@@ -560,6 +560,14 @@ function WishlistSection({
           </div>
         </Card>
       )}
+
+      <Card className="mt-4 flex items-center gap-3 border border-info/20 bg-info/5">
+        <span className="text-xl">💭</span>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          هذي أحلامك — <span className="font-semibold text-foreground">ما تُحسب من دخلك ولا من ميزانيتك</span>،
+          وإذا حققتِ وحدة تنشطب وتبقى ذكرى حلوة 🎀
+        </p>
+      </Card>
 
       {postponable.length > 0 && (
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
