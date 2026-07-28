@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AlertCircle, ArrowLeft, Clock, Gift, HandCoins, Sparkles, TrendingUp, Wallet } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "الرئيسية — منظم مصاريفي" },
-      { name: "description", content: "لوحة تحكم شهرية شاملة لدخلك ومصاريفك وديونك." },
+      { name: "description", content: "لوحة تحكم شهرية شاملة لدخلك والتزاماتك وتقسيطك." },
       { property: "og:title", content: "منظم مصاريفي 💖" },
       { property: "og:description", content: "لوحة تحكم شهرية شاملة لأموالك." },
     ],
@@ -18,19 +18,30 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const { income, totalIncome, extraIncome, urgent, postponable, debts, currentMonth, rewardClaimed } = useStore();
+  const {
+    income, totalIncome, extrasTotal, urgent, dailyExpenses, currentMonth, rewardClaimed,
+    isLate, daysLate, paymentDueDate, surplusTotal,
+  } = useStore();
 
   const totals = useMemo(() => {
-    const urgentTotal = urgent.reduce((s, e) => s + e.amount, 0);
-    const urgentPaid = urgent.filter((e) => e.paid).reduce((s, e) => s + e.amount, 0);
-    const postponableTotal = postponable.reduce((s, e) => s + e.amount, 0);
-    const unpaidDebts = debts.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
-    const paidDebts = debts.filter((d) => d.paid).reduce((s, d) => s + d.amount, 0);
-    const extrasTotal = extraIncome.reduce((s, e) => s + e.amount, 0);
-    const remaining = totalIncome - urgentTotal - unpaidDebts - postponableTotal;
-    const usedPct = Math.min(100, Math.round(((urgentTotal + unpaidDebts + postponableTotal) / Math.max(totalIncome, 1)) * 100));
-    return { urgentTotal, urgentPaid, postponableTotal, unpaidDebts, paidDebts, remaining, usedPct, extrasTotal };
-  }, [totalIncome, extraIncome, urgent, postponable, debts]);
+    const installments = urgent.filter((x) => x.installment && x.installment.monthsTotal > 0);
+    const commitments = urgent.filter((x) => !x.installment || x.installment.monthsTotal === 0);
+    const installmentMonthly = installments.reduce((s, e) => s + e.amount, 0);
+    const installmentLeft = installments.reduce(
+      (s, e) => s + Math.max(0, e.installment!.monthsTotal - e.installment!.monthsPaid) * e.amount,
+      0,
+    );
+    const commitmentsTotal = commitments.reduce((s, e) => s + e.amount, 0);
+    const emergencyTotal = dailyExpenses.reduce((s, e) => s + e.amount, 0);
+    const randomTotal = dailyExpenses.filter((d) => d.mistake).reduce((s, e) => s + e.amount, 0);
+    // الرغبات لا تُحسب من الدخل، والدخل الإضافي يُعتبر ادخارًا
+    const spend = installmentMonthly + commitmentsTotal + emergencyTotal;
+    const remaining = totalIncome - spend;
+    const usedPct = Math.min(100, Math.round((spend / Math.max(totalIncome, 1)) * 100));
+    return {
+      installmentMonthly, installmentLeft, commitmentsTotal, emergencyTotal, randomTotal, remaining, usedPct,
+    };
+  }, [totalIncome, urgent, dailyExpenses]);
 
   const remainingTone =
     totals.remaining < 0
@@ -40,21 +51,25 @@ function Dashboard() {
         : "text-success";
 
   const pieData = [
-    { name: "عاجلة", value: totals.urgentTotal, color: "var(--chart-1)" },
-    { name: "قابلة للتأجيل", value: totals.postponableTotal, color: "var(--chart-2)" },
-    { name: "ديون", value: totals.unpaidDebts, color: "var(--chart-4)" },
+    { name: "تقسيط", value: totals.installmentMonthly, color: "var(--chart-1)" },
+    { name: "التزامات", value: totals.commitmentsTotal, color: "var(--chart-2)" },
+    { name: "صرف طارئ", value: totals.emergencyTotal, color: "var(--chart-4)" },
     { name: "المتبقي", value: Math.max(0, totals.remaining), color: "var(--chart-3)" },
   ].filter((d) => d.value > 0);
 
   const tips: { icon: typeof Sparkles; text: string; tone: string }[] = [];
-  if (totals.remaining < 0) tips.push({ icon: AlertCircle, text: "تجاوزتِ ميزانيتك! قلّلي من المصاريف الاختيارية.", tone: "text-destructive" });
-  if (totals.unpaidDebts > 0) tips.push({ icon: HandCoins, text: "سدّدي الديون قبل الشراء الاختياري لراحتك المالية.", tone: "text-warning" });
+  if (isLate)
+    tips.push({ icon: CalendarX2, text: `تأخرتِ ${daysLate} يوم عن موعد السداد (1 من الشهر) — سدّدي التزاماتك اليوم 💗`, tone: "text-destructive" });
+  if (totals.remaining < 0) tips.push({ icon: AlertCircle, text: "تجاوزتِ ميزانيتك! قلّلي من الصرف العشوائي.", tone: "text-destructive" });
+  if (totals.randomTotal > 0)
+    tips.push({ icon: Zap, text: `عندك ${formatSAR(totals.randomTotal)} صرف عشوائي هالشهر — راقبيه ✨`, tone: "text-warning" });
   if (urgent.some((u) => !u.paid))
-    tips.push({ icon: Wallet, text: "لديك مصاريف عاجلة غير مدفوعة، ابدئي بها أولًا.", tone: "text-primary" });
+    tips.push({ icon: Wallet, text: "لديك التزامات غير مدفوعة، ابدئي بها أولًا.", tone: "text-primary" });
   if (rewardClaimed)
     tips.push({ icon: Gift, text: "استلمتِ مكافأتك هذا الشهر! تستاهلين 🎁", tone: "text-warning" });
   if (tips.length === 0)
     tips.push({ icon: Sparkles, text: "أحسنتِ! أموالك تحت السيطرة هذا الشهر 💚", tone: "text-success" });
+
 
   return (
     <AppShell title={`أهلًا 💖 — ${monthLabel(currentMonth)}`} subtitle={`إجمالي دخلك ${formatSAR(totalIncome)}`}>
