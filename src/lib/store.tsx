@@ -400,6 +400,7 @@ function defaultState(): State {
       { id: uid(), name: "رحلة صيفية", target: 3000, current: 500 },
     ],
     alinmaSavings: { total: 0, payments: [] },
+    surplusEntries: [],
   };
 }
 
@@ -439,6 +440,7 @@ function loadState(): State {
         budgetSplit: parsed.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: parsed.savings ?? [],
         alinmaSavings: parsed.alinmaSavings ?? { total: 0, payments: [] },
+        surplusEntries: parsed.surplusEntries ?? [],
       };
     }
     // migrate legacy v1
@@ -464,6 +466,7 @@ function loadState(): State {
         budgetSplit: p.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: p.savings ?? [],
         alinmaSavings: { total: 0, payments: [] },
+        surplusEntries: [],
       };
     }
   } catch {}
