@@ -252,6 +252,23 @@ const pickEncouragement = () => encouragements[Math.floor(Math.random() * encour
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/** يوم السداد ثابت: 1 من كل شهر ميلادي */
+export const PAYMENT_DAY = 1;
+
+export function paymentDueDateOf(month: string) {
+  return `${month}-${String(PAYMENT_DAY).padStart(2, "0")}`;
+}
+
+/** كم يوم مرّ على موعد السداد (1 من الشهر) — 0 يعني ما تأخرتِ */
+export function daysLateFor(month: string, now: Date = new Date()) {
+  const [y, m] = month.split("-").map(Number);
+  const due = new Date(y, (m || 1) - 1, PAYMENT_DAY);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
+  return diff > 0 ? diff : 0;
+}
+
+
 export function monthKey(d: Date = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
