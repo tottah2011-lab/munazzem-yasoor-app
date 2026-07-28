@@ -22,7 +22,10 @@ export type PostponableExpense = {
   priority: "low" | "medium" | "high";
   category?: string;
   notes?: string;
+  bought?: boolean;
+  boughtDate?: string;
 };
+
 
 
 export type Debt = {
