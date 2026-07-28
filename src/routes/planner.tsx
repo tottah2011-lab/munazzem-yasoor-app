@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarPlus, ClipboardList, Gift, Minus, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Target, Trash2, TrendingUp } from "lucide-react";
+import { CalendarPlus, ClipboardList, Gift, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Trash2, TrendingUp } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
@@ -550,35 +550,5 @@ function SurplusSection() {
         ))}
       </div>
     </>
-  );
-}
-
-
-function QuickAmount({ onAmount }: { onAmount: (n: number) => void }) {
-  const [val, setVal] = useState("");
-  return (
-    <div className="flex flex-1 items-center gap-1.5">
-      <button
-        onClick={() => val && onAmount(-Math.abs(Number(val)))}
-        className="grid h-9 w-9 place-items-center rounded-full bg-muted"
-        aria-label="سحب"
-      >
-        <Minus className="h-4 w-4" />
-      </button>
-      <input
-        type="number"
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        placeholder="مبلغ"
-        className="w-full rounded-full border border-border bg-input/50 px-3 py-2 text-center text-sm outline-none focus:border-primary"
-      />
-      <button
-        onClick={() => { if (val) { onAmount(Math.abs(Number(val))); setVal(""); } }}
-        className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
-        aria-label="إيداع"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
-    </div>
   );
 }
