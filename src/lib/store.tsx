@@ -124,6 +124,15 @@ export type AlinmaSavings = {
   payments: AlinmaPayment[];
 };
 
+export type SurplusEntry = {
+  id: string;
+  month: string; // YYYY-MM
+  amount: number;
+  date: string;
+  note?: string;
+};
+
+
 export type MonthData = {
   income: number;
   extraIncome: ExtraIncome[];
