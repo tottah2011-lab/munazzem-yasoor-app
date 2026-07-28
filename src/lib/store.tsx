@@ -153,6 +153,7 @@ type State = {
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
+  surplusEntries: SurplusEntry[];
 };
 
 
@@ -161,11 +162,19 @@ type Ctx = MonthData & {
   months: Record<string, MonthData>;
   monthKeys: string[];
   totalIncome: number;
+  extrasTotal: number;
+  savedFromExtras: number;
+  surplusEntries: SurplusEntry[];
+  surplusTotal: number;
+  paymentDueDate: string;
+  isLate: boolean;
+  daysLate: number;
   wellness: WellnessState;
   theme: Theme;
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
+
 
   setCurrentMonth: (m: string) => void;
   goPrevMonth: () => void;
