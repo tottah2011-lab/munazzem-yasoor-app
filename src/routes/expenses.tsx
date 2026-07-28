@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  AlertTriangle, ArrowUp, Banknote, CalendarClock, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
-  Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet,
+  AlertTriangle, ArrowUp, Banknote, CalendarClock, CalendarX2, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
+  Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet, Zap,
 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, useStore } from "@/lib/store";
@@ -61,7 +61,7 @@ function ExpensesPage() {
   const tabs: { key: Tab; label: string; icon: typeof Wallet; count: number; hint: string }[] = [
     { key: "installment", label: "تقسيط", icon: CalendarClock, count: installments.length, hint: `${formatSAR(installmentMonthly)}/شهر` },
     { key: "commitments", label: "التزامات شهرية", icon: Wallet, count: commitments.length, hint: formatSAR(commitmentsUnpaid) },
-    { key: "daily", label: "يوميّة", icon: Sun, count: s.dailyExpenses.length, hint: formatSAR(dailyTotal) },
+    { key: "daily", label: "صرف طارئ", icon: Zap, count: s.dailyExpenses.length, hint: formatSAR(dailyTotal) },
     { key: "wishlist", label: "أشياء أبغي اشتريها", icon: ShoppingBag, count: s.postponable.length, hint: formatSAR(wishlistTotal) },
     { key: "alinma", label: "ادخار الإنماء", icon: Landmark, count: s.alinmaSavings.payments.length, hint: formatSAR(alinmaLeft) },
   ];
@@ -69,14 +69,14 @@ function ExpensesPage() {
   const addLabel: Record<Tab, string> = {
     installment: "إضافة تقسيط جديد",
     commitments: "إضافة التزام شهري",
-    daily: "أضيفي مصروف اليوم ☀️",
+    daily: "أضيفي صرف طارئ ⚡",
     wishlist: "أضيفي شي تحلمين فيه ✨",
     alinma: "تسجيل سداد للإنماء 🏦",
   };
 
 
   return (
-    <AppShell title="خزنة مصاريفي 💚" subtitle="تقسيط · التزامات · ادخار · رغبات">
+    <AppShell title="خزنة مصاريفي 💚" subtitle="تقسيط · التزامات · صرف طارئ · رغبات">
       <Card className="flex items-center gap-3 border border-success/20 bg-success/5">
         <div className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
           <Sparkles className="h-5 w-5" />
@@ -699,9 +699,9 @@ function DebtsSection({
   );
 }
 
-/* ---------------- Daily Expenses ---------------- */
+/* ---------------- Emergency / Urgent spending ---------------- */
 
-const dailyCategories = ["طعام", "قهوة", "مواصلات", "تسوّق", "ترفيه", "بقالة", "أخرى"];
+const dailyCategories = ["طعام", "قهوة", "مواصلات", "تسوّق", "ترفيه", "بقالة", "صحة", "طوارئ", "أخرى"];
 
 function DailySection({
   showForm, setShowForm,
@@ -731,7 +731,7 @@ function DailySection({
     <>
       {showForm && (
         <Card className="mt-4 space-y-3">
-          <Input label="على إيش صرفتِ؟" value={name} onChange={setName} placeholder="مثال: كابتشينو من ستاربكس" />
+          <Input label="على إيش صرفتِ؟" value={name} onChange={setName} placeholder="مثال: تصليح مفاجئ للسيارة" />
           <div className="grid grid-cols-2 gap-2">
             <Input label="المبلغ" value={amount} onChange={setAmount} type="number" placeholder="0" />
             <Input label="التاريخ" value={date} onChange={setDate} type="date" />
@@ -762,7 +762,7 @@ function DailySection({
               className="h-4 w-4 accent-destructive"
             />
             <AlertTriangle className="h-4 w-4" />
-            صرفتها بطريقة غلط (ما كانت ضرورية)
+            صرف عشوائي (ما كان ضروري) ⚠️
           </label>
           <Input label="ملاحظة" value={note} onChange={setNote} placeholder="اختياري" />
           <div className="flex gap-2 pt-1">
@@ -781,11 +781,11 @@ function DailySection({
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Card className="p-3 text-center">
-          <p className="text-[10px] text-muted-foreground">إجمالي اليوميات</p>
+          <p className="text-[10px] text-muted-foreground">إجمالي الصرف الطارئ</p>
           <p className="mt-1 text-sm font-bold text-primary">{formatSAR(total)}</p>
         </Card>
         <Card className={`p-3 text-center ${mistakesTotal > 0 ? "border border-destructive/30 bg-destructive/5" : ""}`}>
-          <p className="text-[10px] text-muted-foreground">صرف غلط ⚠️</p>
+          <p className="text-[10px] text-muted-foreground">صرف عشوائي ⚠️</p>
           <p className={`mt-1 text-sm font-bold ${mistakesTotal > 0 ? "text-destructive" : "text-success"}`}>
             {formatSAR(mistakesTotal)}
           </p>
@@ -798,7 +798,7 @@ function DailySection({
             <AlertTriangle className="h-5 w-5" />
           </div>
           <p className="pt-1 text-xs leading-relaxed text-destructive">
-            انتبهي 💗 صرفتِ {formatSAR(mistakesTotal)} بطريقة غير ضرورية هالشهر — حاولي تقللينها الأسبوع الجاي.
+            انتبهي 💗 صرفتِ {formatSAR(mistakesTotal)} بشكل عشوائي هالشهر — حاولي تقللينها الأسبوع الجاي.
           </p>
         </Card>
       )}
@@ -812,7 +812,7 @@ function DailySection({
               filter === f ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
-            {f === "all" ? "كل اليوميات" : "الصرف الغلط فقط"}
+            {f === "all" ? "كل الصرف الطارئ" : "العشوائي فقط"}
           </button>
         ))}
       </div>
@@ -820,7 +820,7 @@ function DailySection({
       <div className="mt-3 space-y-4">
         {list.length === 0 && (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            ما سجلتِ أي مصروف يومي بعد ☀️
+            ما سجلتِ أي صرف طارئ بعد ⚡
           </p>
         )}
         {sortedDates.map((d) => {
@@ -843,7 +843,7 @@ function DailySection({
                     <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
                       e.mistake ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"
                     }`}>
-                      {e.mistake ? <AlertTriangle className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                      {e.mistake ? <AlertTriangle className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
@@ -856,7 +856,7 @@ function DailySection({
                         {e.category && <span>{e.category}</span>}
                         {e.mistake && (
                           <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                            ⚠️ صرف غلط
+                            ⚠️ عشوائي
                           </span>
                         )}
                       </div>
@@ -867,8 +867,8 @@ function DailySection({
                       className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
                         e.mistake ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground hover:text-destructive"
                       }`}
-                      aria-label="تبديل صرف غلط"
-                      title="تبديل صرف غلط"
+                      aria-label="تبديل صرف عشوائي"
+                      title="تبديل صرف عشوائي"
                     >
                       <AlertTriangle className="h-4 w-4" />
                     </button>
