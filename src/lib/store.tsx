@@ -507,7 +507,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         };
       });
 
-    const totalIncome = cm.income + cm.extraIncome.reduce((a, b) => a + b.amount, 0);
+    // الدخل الشهري = الراتب فقط. الدخل الإضافي/العمل الحر يُعتبر ادخارًا ولا يُحتسب.
+    const totalIncome = cm.income;
+    const extrasTotal = cm.extraIncome.reduce((a, b) => a + b.amount, 0);
+    const surplusTotal = state.surplusEntries.reduce((a, b) => a + b.amount, 0);
+    const daysLate = daysLateFor(state.currentMonth);
+    const unpaidCommitments = cm.urgent.filter(
+      (x) => !x.paid && (!x.installment || x.installment.monthsPaid < x.installment.monthsTotal),
+    );
 
     return {
       ...cm,
@@ -515,11 +522,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       months: state.months,
       monthKeys: Object.keys(state.months).sort(),
       totalIncome,
+      extrasTotal,
+      savedFromExtras: extrasTotal,
+      surplusEntries: state.surplusEntries,
+      surplusTotal,
+      paymentDueDate: paymentDueDateOf(state.currentMonth),
+      isLate: daysLate > 0 && unpaidCommitments.length > 0,
+      daysLate,
       wellness: state.wellness,
       theme: state.theme,
       budgetSplit: state.budgetSplit,
       savings: state.savings,
       alinmaSavings: state.alinmaSavings,
+
+      toggleWishBought: (id) => {
+        const item = cm.postponable.find((x) => x.id === id);
+        if (item && !item.bought) {
+          toast.success("مبروك! حققتِ حلمك 🎀", { description: `${item.name} — انشطب من قائمتك بفرح ✨` });
+        }
+        patchMonth((m) => ({
+          postponable: m.postponable.map((x) =>
+            x.id === id
+              ? { ...x, bought: !x.bought, boughtDate: !x.bought ? new Date().toISOString().slice(0, 10) : undefined }
+              : x,
+          ),
+        }));
+      },
+
+      saveSurplus: (amount, note) => {
+        if (amount <= 0) return;
+        toast.success("الفائض تحوّل لادخار 🎉🏦", { description: `${amount} ر.س انضافت لمدخراتك — فخورة فيك 💗` });
+        setState((s) => ({
+          ...s,
+          surplusEntries: [
+            { id: uid(), month: s.currentMonth, amount, date: new Date().toISOString().slice(0, 10), note },
+            ...s.surplusEntries,
+          ],
+        }));
+      },
+      removeSurplus: (id) =>
+        setState((s) => ({ ...s, surplusEntries: s.surplusEntries.filter((x) => x.id !== id) })),
+
 
       addDaily: (d) => {
         if (d.mistake) {
