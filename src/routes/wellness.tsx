@@ -300,31 +300,48 @@ function ChecklistSection({
           );
         })}
         {editMode && (
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newLabel.trim()) {
-                  onAdd(listKey, newLabel.trim());
-                  setNewLabel("");
-                }
-              }}
-              placeholder="اسم الخانة الجديدة..."
-              className="flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <button
-              onClick={() => {
-                if (newLabel.trim()) {
-                  onAdd(listKey, newLabel.trim());
-                  setNewLabel("");
-                }
-              }}
-              className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
-              aria-label="إضافة"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+          <div className="space-y-2 pt-1">
+            {allowFreq && (
+              <div className="flex gap-1.5">
+                {freqOrder.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setNewFreq(f)}
+                    className={`flex-1 rounded-full px-2 py-1.5 text-[10px] font-semibold transition ${
+                      newFreq === f ? "gradient-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground"
+                    }`}
+                  >
+                    {freqLabels[f]}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newLabel.trim()) {
+                    onAdd(listKey, newLabel.trim(), newFreq);
+                    setNewLabel("");
+                  }
+                }}
+                placeholder="اسم الخانة الجديدة..."
+                className="flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <button
+                onClick={() => {
+                  if (newLabel.trim()) {
+                    onAdd(listKey, newLabel.trim(), newFreq);
+                    setNewLabel("");
+                  }
+                }}
+                className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
+                aria-label="إضافة"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
       </Card>
