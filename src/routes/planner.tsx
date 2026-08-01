@@ -458,6 +458,7 @@ function SurplusSection() {
   } = useStore();
   const [note, setNote] = useState("");
   const [custom, setCustom] = useState("");
+  const [pending, setPending] = useState<number | null>(null);
 
   const spent =
     urgent.reduce((a, b) => a + b.amount, 0) +
