@@ -756,15 +756,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           wellness: {
             ...s.wellness,
-            [list]: s.wellness[list].map((x) => (x.id === id ? { ...x, done: !x.done } : x)),
+            [list]: s.wellness[list].map((x) => {
+              if (x.id !== id) return x;
+              const freq = x.freq ?? "daily";
+              if (freq === "daily") return { ...x, done: !x.done };
+              const today = new Date().toISOString().slice(0, 10);
+              const dates = x.doneDates ?? [];
+              const next = dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today];
+              const count = next.filter(isThisWeek).length;
+              return { ...x, doneDates: next, done: count >= freqTarget(freq) };
+            }),
           },
         })),
-      addWellnessItem: (list, label) =>
+      addWellnessItem: (list, label, freq) =>
         setState((s) => ({
           ...s,
           wellness: {
             ...s.wellness,
-            [list]: [...s.wellness[list], { id: uid(), label, done: false }],
+            [list]: [...s.wellness[list], { id: uid(), label, done: false, freq: freq ?? "daily", doneDates: [] }],
+          },
+        })),
+      setWellnessItemFreq: (list, id, freq) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) =>
+              x.id === id
+                ? { ...x, freq, done: freq === "daily" ? x.done : (x.doneDates ?? []).filter(isThisWeek).length >= freqTarget(freq) }
+                : x,
+            ),
           },
         })),
       renameWellnessItem: (list, id, label) =>
