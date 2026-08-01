@@ -217,7 +217,7 @@ type Ctx = MonthData & {
   moveToUrgent: (id: string) => void;
   toggleWishBought: (id: string) => void;
 
-  saveSurplus: (amount: number, note?: string) => void;
+  saveSurplus: (amount: number, note?: string, destination?: "alinma" | "savings") => void;
   removeSurplus: (id: string) => void;
 
 
