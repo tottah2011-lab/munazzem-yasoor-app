@@ -20,8 +20,12 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const {
     income, totalIncome, extrasTotal, urgent, dailyExpenses, currentMonth, rewardClaimed,
-    isLate, daysLate, paymentDueDate, surplusTotal,
+    isLate, daysLate, paymentDueDate, alinmaSavings,
   } = useStore();
+
+  const alinmaPaid = alinmaSavings.payments.reduce((s, p) => s + p.amount, 0);
+  const alinmaLeft = Math.max(0, alinmaSavings.total - alinmaPaid);
+
 
   const totals = useMemo(() => {
     const installments = urgent.filter((x) => x.installment && x.installment.monthsTotal > 0);
