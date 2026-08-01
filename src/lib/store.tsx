@@ -130,6 +130,7 @@ export type SurplusEntry = {
   amount: number;
   date: string;
   note?: string;
+  destination?: "alinma" | "savings";
 };
 
 
