@@ -326,14 +326,17 @@ const defaultWellness: WellnessState = {
     { id: "m4", label: "سناك فواكه", done: false },
   ],
   skinCare: [
-    { id: "s1", label: "غسول الوجه", done: false },
-    { id: "s3", label: "مرطب", done: false },
-    { id: "s4", label: "واقي شمس", done: false },
+    { id: "s1", label: "غسول الوجه", done: false, freq: "daily", doneDates: [] },
+    { id: "s3", label: "مرطب", done: false, freq: "daily", doneDates: [] },
+    { id: "s4", label: "واقي شمس", done: false, freq: "daily", doneDates: [] },
+    { id: "s5", label: "تقشير البشرة", done: false, freq: "twice", doneDates: [] },
+    { id: "s6", label: "ماسك الوجه", done: false, freq: "weekly", doneDates: [] },
   ],
   hairCare: [
-    { id: "h1", label: "تمشيط الشعر", done: false },
-    { id: "h2", label: "زيت الشعر", done: false },
-    { id: "h3", label: "ماسك أسبوعي", done: false },
+    { id: "h1", label: "تمشيط الشعر", done: false, freq: "daily", doneDates: [] },
+    { id: "h2", label: "زيت الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "h3", label: "ماسك أسبوعي", done: false, freq: "weekly", doneDates: [] },
+    { id: "h4", label: "غسل الشعر", done: false, freq: "twice", doneDates: [] },
   ],
   habits: [
     { id: "hb1", label: "قراءة 10 دقائق", done: false },
