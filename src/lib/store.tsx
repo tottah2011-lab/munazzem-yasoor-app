@@ -38,7 +38,29 @@ export type Debt = {
   paidDate?: string;
 };
 
-export type WellnessItem = { id: string; label: string; done: boolean };
+export type WellnessFreq = "daily" | "weekly" | "twice";
+
+export type WellnessItem = {
+  id: string;
+  label: string;
+  done: boolean;
+  freq?: WellnessFreq;
+  doneDates?: string[];
+};
+
+/** بداية أسبوع (السبت) بصيغة YYYY-MM-DD */
+export function weekStart(d = new Date()) {
+  const x = new Date(d);
+  const diff = (x.getDay() + 1) % 7; // السبت = بداية الأسبوع
+  x.setDate(x.getDate() - diff);
+  return x.toISOString().slice(0, 10);
+}
+
+export function isThisWeek(date: string) {
+  return date >= weekStart();
+}
+
+export const freqTarget = (f?: WellnessFreq) => (f === "twice" ? 2 : 1);
 
 export type WellnessListKey =
   | "meals"
@@ -130,6 +152,7 @@ export type SurplusEntry = {
   amount: number;
   date: string;
   note?: string;
+  destination?: "alinma" | "savings";
 };
 
 
@@ -194,7 +217,7 @@ type Ctx = MonthData & {
   moveToUrgent: (id: string) => void;
   toggleWishBought: (id: string) => void;
 
-  saveSurplus: (amount: number, note?: string) => void;
+  saveSurplus: (amount: number, note?: string, destination?: "alinma" | "savings") => void;
   removeSurplus: (id: string) => void;
 
 
@@ -214,7 +237,8 @@ type Ctx = MonthData & {
 
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
-  addWellnessItem: (list: WellnessListKey, label: string) => void;
+  addWellnessItem: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
+  setWellnessItemFreq: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
   renameWellnessItem: (list: WellnessListKey, id: string, label: string) => void;
   removeWellnessItem: (list: WellnessListKey, id: string) => void;
 
@@ -302,14 +326,17 @@ const defaultWellness: WellnessState = {
     { id: "m4", label: "سناك فواكه", done: false },
   ],
   skinCare: [
-    { id: "s1", label: "غسول الوجه", done: false },
-    { id: "s3", label: "مرطب", done: false },
-    { id: "s4", label: "واقي شمس", done: false },
+    { id: "s1", label: "غسول الوجه", done: false, freq: "daily", doneDates: [] },
+    { id: "s3", label: "مرطب", done: false, freq: "daily", doneDates: [] },
+    { id: "s4", label: "واقي شمس", done: false, freq: "daily", doneDates: [] },
+    { id: "s5", label: "تقشير البشرة", done: false, freq: "twice", doneDates: [] },
+    { id: "s6", label: "ماسك الوجه", done: false, freq: "weekly", doneDates: [] },
   ],
   hairCare: [
-    { id: "h1", label: "تمشيط الشعر", done: false },
-    { id: "h2", label: "زيت الشعر", done: false },
-    { id: "h3", label: "ماسك أسبوعي", done: false },
+    { id: "h1", label: "تمشيط الشعر", done: false, freq: "daily", doneDates: [] },
+    { id: "h2", label: "زيت الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "h3", label: "ماسك أسبوعي", done: false, freq: "weekly", doneDates: [] },
+    { id: "h4", label: "غسل الشعر", done: false, freq: "twice", doneDates: [] },
   ],
   habits: [
     { id: "hb1", label: "قراءة 10 دقائق", done: false },
@@ -549,10 +576,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
       },
 
-      saveSurplus: (amount, note) => {
+      saveSurplus: (amount, note, destination = "alinma") => {
         if (amount <= 0) return;
         setState((s) => {
           const label = note || `فائض شهر ${s.currentMonth}`;
+          const today = new Date().toISOString().slice(0, 10);
+          const entry = { id: uid(), month: s.currentMonth, amount, date: today, note: label, destination };
+
+          if (destination === "savings") {
+            toast.success("الفائض انحفظ في مدخراتك 💗", {
+              description: `${amount} ر.س محجوزة لك — أنتِ اللي تقررين وين تروح ✨`,
+            });
+            return { ...s, surplusEntries: [entry, ...s.surplusEntries] };
+          }
+
           const paid = s.alinmaSavings.payments.reduce((a, b) => a + b.amount, 0) + amount;
           const left = Math.max(0, s.alinmaSavings.total - paid);
           toast.success("الفائض راح لسداد الإنماء 🏦🎉", {
@@ -565,16 +602,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           });
           return {
             ...s,
-            surplusEntries: [
-              { id: uid(), month: s.currentMonth, amount, date: new Date().toISOString().slice(0, 10), note: label },
-              ...s.surplusEntries,
-            ],
+            surplusEntries: [entry, ...s.surplusEntries],
             alinmaSavings: {
               ...s.alinmaSavings,
-              payments: [
-                { id: uid(), amount, date: new Date().toISOString().slice(0, 10), note: label },
-                ...s.alinmaSavings.payments,
-              ],
+              payments: [{ id: uid(), amount, date: today, note: label }, ...s.alinmaSavings.payments],
             },
           };
         });
@@ -732,15 +763,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           wellness: {
             ...s.wellness,
-            [list]: s.wellness[list].map((x) => (x.id === id ? { ...x, done: !x.done } : x)),
+            [list]: s.wellness[list].map((x) => {
+              if (x.id !== id) return x;
+              const freq = x.freq ?? "daily";
+              if (freq === "daily") return { ...x, done: !x.done };
+              const today = new Date().toISOString().slice(0, 10);
+              const dates = x.doneDates ?? [];
+              const next = dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today];
+              const count = next.filter(isThisWeek).length;
+              return { ...x, doneDates: next, done: count >= freqTarget(freq) };
+            }),
           },
         })),
-      addWellnessItem: (list, label) =>
+      addWellnessItem: (list, label, freq) =>
         setState((s) => ({
           ...s,
           wellness: {
             ...s.wellness,
-            [list]: [...s.wellness[list], { id: uid(), label, done: false }],
+            [list]: [...s.wellness[list], { id: uid(), label, done: false, freq: freq ?? "daily", doneDates: [] }],
+          },
+        })),
+      setWellnessItemFreq: (list, id, freq) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) =>
+              x.id === id
+                ? { ...x, freq, done: freq === "daily" ? x.done : (x.doneDates ?? []).filter(isThisWeek).length >= freqTarget(freq) }
+                : x,
+            ),
           },
         })),
       renameWellnessItem: (list, id, label) =>

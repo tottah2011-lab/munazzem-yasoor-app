@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { useStore, type WellnessListKey, type WellnessItem } from "@/lib/store";
+import { useStore, isThisWeek, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq } from "@/lib/store";
 
 export const Route = createFileRoute("/wellness")({
   head: () => ({
@@ -24,7 +24,7 @@ const moods = [
 ] as const;
 
 function Wellness() {
-  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem } = useStore();
+  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq } = useStore();
 
   return (
     <AppShell title="العناية وتطوير الذات 💖" subtitle="اهتمي بنفسك وطوّري ذاتك">
@@ -107,8 +107,10 @@ function Wellness() {
       <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالبشرة 🌸" icon={Smile} listKey="skinCare" items={wellness.skinCare}
+        allowFreq onSetFreq={setWellnessItemFreq}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
+        allowFreq onSetFreq={setWellnessItemFreq}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection
         title="مشاكل أبغى أحلها 💗"
@@ -157,23 +159,33 @@ function NumberCard({
   );
 }
 
+const freqLabels: Record<WellnessFreq, string> = {
+  daily: "يومي",
+  weekly: "مرة بالأسبوع",
+  twice: "مرتين بالأسبوع",
+};
+const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
+
 function ChecklistSection({
-  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove,
+  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq,
 }: {
   title: string;
   icon: typeof Utensils;
   listKey: WellnessListKey;
   items: WellnessItem[];
   onToggle: (list: WellnessListKey, id: string) => void;
-  onAdd: (list: WellnessListKey, label: string) => void;
+  onAdd: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
   onRename: (list: WellnessListKey, id: string, label: string) => void;
   onRemove: (list: WellnessListKey, id: string) => void;
+  allowFreq?: boolean;
+  onSetFreq?: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
 }) {
   const done = items.filter((i) => i.done).length;
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [newLabel, setNewLabel] = useState("");
+  const [newFreq, setNewFreq] = useState<WellnessFreq>("daily");
 
   const startEdit = (item: WellnessItem) => {
     setEditingId(item.id);
@@ -213,6 +225,10 @@ function ChecklistSection({
         )}
         {items.map((i) => {
           const isEditing = editingId === i.id;
+          const freq: WellnessFreq = i.freq ?? "daily";
+          const target = freqTarget(freq);
+          const weekCount = (i.doneDates ?? []).filter(isThisWeek).length;
+          const weekly = allowFreq && freq !== "daily";
           return (
             <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
               <button
@@ -233,9 +249,35 @@ function ChecklistSection({
                   className="flex-1 rounded-xl border border-primary bg-input/50 px-2 py-1 text-sm outline-none"
                 />
               ) : (
-                <span className={`flex-1 text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
-                  {i.label}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <span className={`block truncate text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
+                    {i.label}
+                  </span>
+                  {weekly && (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        {freqLabels[freq]}
+                      </span>
+                      <div className="flex gap-1">
+                        {Array.from({ length: target }).map((_, k) => (
+                          <span
+                            key={k}
+                            className={`h-1.5 w-5 rounded-full ${k < weekCount ? "bg-success" : "bg-muted"}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{weekCount}/{target} هالأسبوع</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {allowFreq && editMode && !isEditing && onSetFreq && (
+                <button
+                  onClick={() => onSetFreq(listKey, i.id, freqOrder[(freqOrder.indexOf(freq) + 1) % freqOrder.length])}
+                  className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold"
+                >
+                  {freqLabels[freq]}
+                </button>
               )}
               {editMode && !isEditing && (
                 <>
@@ -261,31 +303,48 @@ function ChecklistSection({
           );
         })}
         {editMode && (
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newLabel.trim()) {
-                  onAdd(listKey, newLabel.trim());
-                  setNewLabel("");
-                }
-              }}
-              placeholder="اسم الخانة الجديدة..."
-              className="flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <button
-              onClick={() => {
-                if (newLabel.trim()) {
-                  onAdd(listKey, newLabel.trim());
-                  setNewLabel("");
-                }
-              }}
-              className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
-              aria-label="إضافة"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+          <div className="space-y-2 pt-1">
+            {allowFreq && (
+              <div className="flex gap-1.5">
+                {freqOrder.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setNewFreq(f)}
+                    className={`flex-1 rounded-full px-2 py-1.5 text-[10px] font-semibold transition ${
+                      newFreq === f ? "gradient-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground"
+                    }`}
+                  >
+                    {freqLabels[f]}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newLabel.trim()) {
+                    onAdd(listKey, newLabel.trim(), newFreq);
+                    setNewLabel("");
+                  }
+                }}
+                placeholder="اسم الخانة الجديدة..."
+                className="flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <button
+                onClick={() => {
+                  if (newLabel.trim()) {
+                    onAdd(listKey, newLabel.trim(), newFreq);
+                    setNewLabel("");
+                  }
+                }}
+                className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground"
+                aria-label="إضافة"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
       </Card>

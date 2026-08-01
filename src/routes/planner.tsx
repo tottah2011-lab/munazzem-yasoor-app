@@ -458,6 +458,7 @@ function SurplusSection() {
   } = useStore();
   const [note, setNote] = useState("");
   const [custom, setCustom] = useState("");
+  const [pending, setPending] = useState<number | null>(null);
 
   const spent =
     urgent.reduce((a, b) => a + b.amount, 0) +
@@ -493,7 +494,7 @@ function SurplusSection() {
 
       <Card className="mt-3 space-y-3">
         <p className="text-xs text-muted-foreground">
-          حوّلي الفائض لمدخراتك وخليه يكبر معك 💗
+          الفائض ما ينتقل تلقائيًا — أنتِ اللي تقررين وين يروح 💗
         </p>
         <Input label="ملاحظة (اختياري)" value={note} onChange={setNote} placeholder="مثال: فائض ديسمبر" />
         <div className="flex items-center gap-2">
@@ -507,20 +508,52 @@ function SurplusSection() {
           <button
             onClick={() => {
               const v = Number(custom);
-              if (v > 0) { saveSurplus(v, note || undefined); setCustom(""); setNote(""); }
+              if (v > 0) setPending(v);
             }}
             className="shrink-0 rounded-full bg-muted px-4 py-2 text-xs font-semibold"
           >
-            ادّخري المبلغ
+            اختاري الوجهة
           </button>
         </div>
         <button
           disabled={surplus <= 0}
-          onClick={() => { saveSurplus(surplus, note || `فائض ${currentMonth}`); setNote(""); }}
+          onClick={() => setPending(surplus)}
           className="w-full rounded-full gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-soft disabled:opacity-40"
         >
-          🎉 حوّلي كل الفائض ({formatSAR(surplus)}) للادخار
+          🎀 قرري وش تسوين بالفائض ({formatSAR(surplus)})
         </button>
+
+        {pending !== null && (
+          <div className="space-y-2 rounded-3xl border border-primary/25 bg-primary/5 p-3">
+            <p className="text-center text-xs font-semibold">
+              وين تبين يروح {formatSAR(pending)}؟ 💭
+            </p>
+            <button
+              onClick={() => {
+                saveSurplus(pending, note || `فائض ${currentMonth}`, "alinma");
+                setPending(null); setNote(""); setCustom("");
+              }}
+              className="w-full rounded-full gradient-success py-3 text-sm font-bold text-primary-foreground shadow-soft"
+            >
+              🏦 حوّليه لسداد الإنماء
+            </button>
+            <button
+              onClick={() => {
+                saveSurplus(pending, note || `فائض ${currentMonth}`, "savings");
+                setPending(null); setNote(""); setCustom("");
+              }}
+              className="w-full rounded-full bg-muted py-3 text-sm font-bold"
+            >
+              💗 خليه في مدخراتي
+            </button>
+            <button
+              onClick={() => setPending(null)}
+              className="w-full py-1 text-[11px] text-muted-foreground"
+            >
+              إلغاء
+            </button>
+          </div>
+        )}
       </Card>
 
       <div className="mt-3 space-y-2">
@@ -531,13 +564,17 @@ function SurplusSection() {
         )}
         {surplusEntries.map((e) => (
           <Card key={e.id} className="flex items-center gap-3 border border-success/20 bg-success/5">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success/15 text-lg">🏦</div>
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success/15 text-lg">
+              {e.destination === "savings" ? "💗" : "🏦"}
+            </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate font-semibold">{e.note || `فائض ${e.month}`}</p>
                 <p className="shrink-0 font-bold text-success">+{formatSAR(e.amount)}</p>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{e.date}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {e.date} · {e.destination === "savings" ? "في مدخراتك" : "سداد الإنماء"}
+              </p>
             </div>
             <button
               onClick={() => removeSurplus(e.id)}
