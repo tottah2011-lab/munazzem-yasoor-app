@@ -237,7 +237,8 @@ type Ctx = MonthData & {
 
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
-  addWellnessItem: (list: WellnessListKey, label: string) => void;
+  addWellnessItem: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
+  setWellnessItemFreq: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
   renameWellnessItem: (list: WellnessListKey, id: string, label: string) => void;
   removeWellnessItem: (list: WellnessListKey, id: string) => void;
 
