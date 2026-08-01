@@ -157,17 +157,26 @@ function NumberCard({
   );
 }
 
+const freqLabels: Record<WellnessFreq, string> = {
+  daily: "يومي",
+  weekly: "مرة بالأسبوع",
+  twice: "مرتين بالأسبوع",
+};
+const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
+
 function ChecklistSection({
-  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove,
+  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq,
 }: {
   title: string;
   icon: typeof Utensils;
   listKey: WellnessListKey;
   items: WellnessItem[];
   onToggle: (list: WellnessListKey, id: string) => void;
-  onAdd: (list: WellnessListKey, label: string) => void;
+  onAdd: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
   onRename: (list: WellnessListKey, id: string, label: string) => void;
   onRemove: (list: WellnessListKey, id: string) => void;
+  allowFreq?: boolean;
+  onSetFreq?: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
 }) {
   const done = items.filter((i) => i.done).length;
   const [editMode, setEditMode] = useState(false);
