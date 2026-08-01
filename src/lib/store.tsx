@@ -38,7 +38,29 @@ export type Debt = {
   paidDate?: string;
 };
 
-export type WellnessItem = { id: string; label: string; done: boolean };
+export type WellnessFreq = "daily" | "weekly" | "twice";
+
+export type WellnessItem = {
+  id: string;
+  label: string;
+  done: boolean;
+  freq?: WellnessFreq;
+  doneDates?: string[];
+};
+
+/** بداية أسبوع (السبت) بصيغة YYYY-MM-DD */
+export function weekStart(d = new Date()) {
+  const x = new Date(d);
+  const diff = (x.getDay() + 1) % 7; // السبت = بداية الأسبوع
+  x.setDate(x.getDate() - diff);
+  return x.toISOString().slice(0, 10);
+}
+
+export function isThisWeek(date: string) {
+  return date >= weekStart();
+}
+
+export const freqTarget = (f?: WellnessFreq) => (f === "twice" ? 2 : 1);
 
 export type WellnessListKey =
   | "meals"
