@@ -147,7 +147,7 @@ function Dashboard() {
         <StatCard label="تقسيط (شهريًا)" value={formatSAR(totals.installmentMonthly)} icon={CalendarClock} to="/expenses" tone="from-info/20 to-info/5" />
         <StatCard label="التزامات شهرية" value={formatSAR(totals.commitmentsTotal)} icon={Wallet} to="/expenses" tone="from-primary/20 to-primary/5" />
         <StatCard label="صرف طارئ" value={formatSAR(totals.emergencyTotal)} icon={Zap} to="/expenses" tone="from-warning/20 to-warning/5" />
-        <StatCard label="مدخراتك" value={formatSAR(extrasTotal + surplusTotal)} icon={PiggyBank} to="/planner" tone="from-success/20 to-success/5" />
+        <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
 
 
