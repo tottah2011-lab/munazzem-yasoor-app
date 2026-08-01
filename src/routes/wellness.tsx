@@ -183,6 +183,7 @@ function ChecklistSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [newLabel, setNewLabel] = useState("");
+  const [newFreq, setNewFreq] = useState<WellnessFreq>("daily");
 
   const startEdit = (item: WellnessItem) => {
     setEditingId(item.id);
