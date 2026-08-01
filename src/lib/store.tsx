@@ -551,15 +551,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       saveSurplus: (amount, note) => {
         if (amount <= 0) return;
-        toast.success("الفائض تحوّل لادخار 🎉🏦", { description: `${amount} ر.س انضافت لمدخراتك — فخورة فيك 💗` });
-        setState((s) => ({
-          ...s,
-          surplusEntries: [
-            { id: uid(), month: s.currentMonth, amount, date: new Date().toISOString().slice(0, 10), note },
-            ...s.surplusEntries,
-          ],
-        }));
+        setState((s) => {
+          const label = note || `فائض شهر ${s.currentMonth}`;
+          const paid = s.alinmaSavings.payments.reduce((a, b) => a + b.amount, 0) + amount;
+          const left = Math.max(0, s.alinmaSavings.total - paid);
+          toast.success("الفائض راح لسداد الإنماء 🏦🎉", {
+            description:
+              s.alinmaSavings.total > 0
+                ? left === 0
+                  ? `${amount} ر.س سدّدت باقي الإنماء — مبروك 🎊`
+                  : `${amount} ر.س انضافت للسداد — متبقي ${left} ر.س 💗`
+                : `${amount} ر.س انحفظت لسداد الإنماء 💗`,
+          });
+          return {
+            ...s,
+            surplusEntries: [
+              { id: uid(), month: s.currentMonth, amount, date: new Date().toISOString().slice(0, 10), note: label },
+              ...s.surplusEntries,
+            ],
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              payments: [
+                { id: uid(), amount, date: new Date().toISOString().slice(0, 10), note: label },
+                ...s.alinmaSavings.payments,
+              ],
+            },
+          };
+        });
       },
+
       removeSurplus: (id) =>
         setState((s) => ({ ...s, surplusEntries: s.surplusEntries.filter((x) => x.id !== id) })),
 
