@@ -222,6 +222,10 @@ function ChecklistSection({
         )}
         {items.map((i) => {
           const isEditing = editingId === i.id;
+          const freq: WellnessFreq = i.freq ?? "daily";
+          const target = freqTarget(freq);
+          const weekCount = (i.doneDates ?? []).filter(isThisWeek).length;
+          const weekly = allowFreq && freq !== "daily";
           return (
             <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
               <button
@@ -242,9 +246,35 @@ function ChecklistSection({
                   className="flex-1 rounded-xl border border-primary bg-input/50 px-2 py-1 text-sm outline-none"
                 />
               ) : (
-                <span className={`flex-1 text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
-                  {i.label}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <span className={`block truncate text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
+                    {i.label}
+                  </span>
+                  {weekly && (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        {freqLabels[freq]}
+                      </span>
+                      <div className="flex gap-1">
+                        {Array.from({ length: target }).map((_, k) => (
+                          <span
+                            key={k}
+                            className={`h-1.5 w-5 rounded-full ${k < weekCount ? "bg-success" : "bg-muted"}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{weekCount}/{target} هالأسبوع</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {allowFreq && editMode && !isEditing && onSetFreq && (
+                <button
+                  onClick={() => onSetFreq(listKey, i.id, freqOrder[(freqOrder.indexOf(freq) + 1) % freqOrder.length])}
+                  className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold"
+                >
+                  {freqLabels[freq]}
+                </button>
               )}
               {editMode && !isEditing && (
                 <>
