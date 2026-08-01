@@ -573,10 +573,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
       },
 
-      saveSurplus: (amount, note) => {
+      saveSurplus: (amount, note, destination = "alinma") => {
         if (amount <= 0) return;
         setState((s) => {
           const label = note || `فائض شهر ${s.currentMonth}`;
+          const today = new Date().toISOString().slice(0, 10);
+          const entry = { id: uid(), month: s.currentMonth, amount, date: today, note: label, destination };
+
+          if (destination === "savings") {
+            toast.success("الفائض انحفظ في مدخراتك 💗", {
+              description: `${amount} ر.س محجوزة لك — أنتِ اللي تقررين وين تروح ✨`,
+            });
+            return { ...s, surplusEntries: [entry, ...s.surplusEntries] };
+          }
+
           const paid = s.alinmaSavings.payments.reduce((a, b) => a + b.amount, 0) + amount;
           const left = Math.max(0, s.alinmaSavings.total - paid);
           toast.success("الفائض راح لسداد الإنماء 🏦🎉", {
@@ -589,16 +599,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           });
           return {
             ...s,
-            surplusEntries: [
-              { id: uid(), month: s.currentMonth, amount, date: new Date().toISOString().slice(0, 10), note: label },
-              ...s.surplusEntries,
-            ],
+            surplusEntries: [entry, ...s.surplusEntries],
             alinmaSavings: {
               ...s.alinmaSavings,
-              payments: [
-                { id: uid(), amount, date: new Date().toISOString().slice(0, 10), note: label },
-                ...s.alinmaSavings.payments,
-              ],
+              payments: [{ id: uid(), amount, date: today, note: label }, ...s.alinmaSavings.payments],
             },
           };
         });
