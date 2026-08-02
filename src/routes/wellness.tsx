@@ -24,7 +24,7 @@ const moods = [
 ] as const;
 
 function Wellness() {
-  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq } = useStore();
+  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq, logWellnessSession, undoWellnessSession } = useStore();
 
   return (
     <AppShell title="العناية وتطوير الذات 💖" subtitle="اهتمي بنفسك وطوّري ذاتك">
@@ -107,10 +107,10 @@ function Wellness() {
       <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالبشرة 🌸" icon={Smile} listKey="skinCare" items={wellness.skinCare}
-        allowFreq onSetFreq={setWellnessItemFreq}
+        allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
-        allowFreq onSetFreq={setWellnessItemFreq}
+        allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection
         title="مشاكل أبغى أحلها 💗"
@@ -167,7 +167,7 @@ const freqLabels: Record<WellnessFreq, string> = {
 const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
 
 function ChecklistSection({
-  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq,
+  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq, onLog, onUndo,
 }: {
   title: string;
   icon: typeof Utensils;
@@ -179,6 +179,8 @@ function ChecklistSection({
   onRemove: (list: WellnessListKey, id: string) => void;
   allowFreq?: boolean;
   onSetFreq?: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
+  onLog?: (list: WellnessListKey, id: string) => void;
+  onUndo?: (list: WellnessListKey, id: string) => void;
 }) {
   const done = items.filter((i) => i.done).length;
   const [editMode, setEditMode] = useState(false);
@@ -253,22 +255,45 @@ function ChecklistSection({
                   <span className={`block truncate text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
                     {i.label}
                   </span>
-                  {weekly && (
+                  {allowFreq && (
                     <div className="mt-1 flex items-center gap-1.5">
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         {freqLabels[freq]}
                       </span>
-                      <div className="flex gap-1">
-                        {Array.from({ length: target }).map((_, k) => (
-                          <span
-                            key={k}
-                            className={`h-1.5 w-5 rounded-full ${k < weekCount ? "bg-success" : "bg-muted"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">{weekCount}/{target} هالأسبوع</span>
+                      {weekly && (
+                        <div className="flex gap-1">
+                          {Array.from({ length: target }).map((_, k) => (
+                            <span
+                              key={k}
+                              className={`h-1.5 w-5 rounded-full ${k < weekCount ? "bg-success" : "bg-muted"}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {weekly ? `${weekCount}/${target} هالأسبوع` : `${weekCount} جلسة هالأسبوع`}
+                      </span>
                     </div>
                   )}
+                </div>
+              )}
+              {allowFreq && onLog && !editMode && !isEditing && (
+                <div className="flex shrink-0 items-center gap-1">
+                  {weekCount > 0 && onUndo && (
+                    <button
+                      onClick={() => onUndo(listKey, i.id)}
+                      className="grid h-7 w-7 place-items-center rounded-full bg-muted text-muted-foreground"
+                      aria-label="تراجع عن جلسة"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onLog(listKey, i.id)}
+                    className="flex h-7 items-center gap-1 rounded-full gradient-primary px-2.5 text-[10px] font-bold text-primary-foreground"
+                  >
+                    <Plus className="h-3 w-3" /> جلسة
+                  </button>
                 </div>
               )}
               {allowFreq && editMode && !isEditing && onSetFreq && (

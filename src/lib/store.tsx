@@ -237,6 +237,8 @@ type Ctx = MonthData & {
 
   setWellness: (patch: Partial<WellnessState>) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
+  logWellnessSession: (list: WellnessListKey, id: string) => void;
+  undoWellnessSession: (list: WellnessListKey, id: string) => void;
   addWellnessItem: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
   setWellnessItemFreq: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
   renameWellnessItem: (list: WellnessListKey, id: string, label: string) => void;
@@ -276,14 +278,14 @@ const pickEncouragement = () => encouragements[Math.floor(Math.random() * encour
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-/** يوم السداد ثابت: 1 من كل شهر ميلادي */
-export const PAYMENT_DAY = 1;
+/** يوم السداد ثابت: 10 من كل شهر ميلادي */
+export const PAYMENT_DAY = 10;
 
 export function paymentDueDateOf(month: string) {
   return `${month}-${String(PAYMENT_DAY).padStart(2, "0")}`;
 }
 
-/** كم يوم مرّ على موعد السداد (1 من الشهر) — 0 يعني ما تأخرتِ */
+/** كم يوم مرّ على موعد السداد (10 من الشهر) — 0 يعني ما تأخرتِ */
 export function daysLateFor(month: string, now: Date = new Date()) {
   const [y, m] = month.split("-").map(Number);
   const due = new Date(y, (m || 1) - 1, PAYMENT_DAY);
@@ -772,6 +774,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               const next = dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today];
               const count = next.filter(isThisWeek).length;
               return { ...x, doneDates: next, done: count >= freqTarget(freq) };
+            }),
+          },
+        })),
+      logWellnessSession: (list, id) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) => {
+              if (x.id !== id) return x;
+              const freq = x.freq ?? "daily";
+              const today = new Date().toISOString().slice(0, 10);
+              const next = [...(x.doneDates ?? []), today];
+              const count = next.filter(isThisWeek).length;
+              return { ...x, doneDates: next, done: freq === "daily" ? true : count >= freqTarget(freq) };
+            }),
+          },
+        })),
+      undoWellnessSession: (list, id) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) => {
+              if (x.id !== id) return x;
+              const freq = x.freq ?? "daily";
+              const dates = [...(x.doneDates ?? [])];
+              for (let i = dates.length - 1; i >= 0; i--) {
+                if (isThisWeek(dates[i])) { dates.splice(i, 1); break; }
+              }
+              const count = dates.filter(isThisWeek).length;
+              return { ...x, doneDates: dates, done: freq === "daily" ? count > 0 : count >= freqTarget(freq) };
             }),
           },
         })),
