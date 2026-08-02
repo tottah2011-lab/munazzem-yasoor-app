@@ -245,6 +245,8 @@ type Ctx = MonthData & {
   resetAlinma: () => void;
 
   setWellness: (patch: Partial<WellnessState>) => void;
+  saveJournalEntry: (e: Omit<JournalEntry, "id">) => void;
+  removeJournalEntry: (id: string) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
   logWellnessSession: (list: WellnessListKey, id: string) => void;
   undoWellnessSession: (list: WellnessListKey, id: string) => void;
