@@ -276,8 +276,8 @@ const pickEncouragement = () => encouragements[Math.floor(Math.random() * encour
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-/** يوم السداد ثابت: 1 من كل شهر ميلادي */
-export const PAYMENT_DAY = 1;
+/** يوم السداد ثابت: 10 من كل شهر ميلادي */
+export const PAYMENT_DAY = 10;
 
 export function paymentDueDateOf(month: string) {
   return `${month}-${String(PAYMENT_DAY).padStart(2, "0")}`;
