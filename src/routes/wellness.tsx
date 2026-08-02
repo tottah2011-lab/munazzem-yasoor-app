@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { useStore, isThisWeek, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq } from "@/lib/store";
+import { useStore, isThisWeek, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq, type JournalEntry } from "@/lib/store";
 
 export const Route = createFileRoute("/wellness")({
   head: () => ({
@@ -24,7 +24,7 @@ const moods = [
 ] as const;
 
 function Wellness() {
-  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq, logWellnessSession, undoWellnessSession } = useStore();
+  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq, logWellnessSession, undoWellnessSession, saveJournalEntry, removeJournalEntry } = useStore();
 
   return (
     <AppShell title="العناية وتطوير الذات 💖" subtitle="اهتمي بنفسك وطوّري ذاتك">
@@ -86,23 +86,7 @@ function Wellness() {
         </div>
       </Card>
 
-      <SectionTitle>المزاج اليوم 🌈</SectionTitle>
-      <Card>
-        <div className="flex items-center justify-between gap-2">
-          {moods.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setWellness({ mood: m.key })}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-3 transition ${
-                wellness.mood === m.key ? "gradient-primary text-primary-foreground shadow-soft" : "bg-muted/50"
-              }`}
-            >
-              <span className="text-2xl">{m.emoji}</span>
-              <span className="text-[11px] font-medium">{m.label}</span>
-            </button>
-          ))}
-        </div>
-      </Card>
+      <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
 
       <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
@@ -132,6 +116,132 @@ function Wellness() {
       <ChecklistSection title="إنجازاتي 🏆" icon={Award} listKey="achievements" items={wellness.achievements}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
     </AppShell>
+  );
+}
+
+const dayLabel = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+function JournalSection({
+  entries, onSave, onRemove,
+}: {
+  entries: JournalEntry[];
+  onSave: (e: Omit<JournalEntry, "id">) => void;
+  onRemove: (id: string) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
+  const current = entries.find((e) => e.date === date);
+  const [mood, setMood] = useState<JournalEntry["mood"]>(current?.mood ?? "good");
+  const [happy, setHappy] = useState(current?.happy ?? "");
+  const [sad, setSad] = useState(current?.sad ?? "");
+  const [showAll, setShowAll] = useState(false);
+
+  const pickDate = (d: string) => {
+    const e = entries.find((x) => x.date === d);
+    setDate(d);
+    setMood(e?.mood ?? "good");
+    setHappy(e?.happy ?? "");
+    setSad(e?.sad ?? "");
+  };
+
+  const save = () => {
+    if (!happy.trim() && !sad.trim()) return;
+    onSave({ date, mood, happy: happy.trim(), sad: sad.trim() });
+  };
+
+  const visible = showAll ? entries : entries.slice(0, 3);
+
+  return (
+    <>
+      <SectionTitle>يومياتي 🌸 وش أحزنني أو أفرحني</SectionTitle>
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">اليوم</span>
+          <input
+            type="date"
+            value={date}
+            max={today}
+            onChange={(e) => pickDate(e.target.value)}
+            className="rounded-full border border-border bg-input/50 px-3 py-1.5 text-xs outline-none focus:border-primary"
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          {moods.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMood(m.key)}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2.5 transition ${
+                mood === m.key ? "gradient-primary text-primary-foreground shadow-soft" : "bg-muted/50"
+              }`}
+            >
+              <span className="text-xl">{m.emoji}</span>
+              <span className="text-[11px] font-medium">{m.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold text-success">🌷 وش فرّحني اليوم؟</label>
+          <textarea
+            value={happy}
+            onChange={(e) => setHappy(e.target.value)}
+            rows={2}
+            placeholder="اكتبي أجمل شي صار لك..."
+            className="w-full resize-none rounded-2xl border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <label className="block text-xs font-semibold text-destructive">🌧️ وش أحزنني اليوم؟</label>
+          <textarea
+            value={sad}
+            onChange={(e) => setSad(e.target.value)}
+            rows={2}
+            placeholder="فضفضي هنا... كل شي بيمر 💗"
+            className="w-full resize-none rounded-2xl border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <button
+          onClick={save}
+          className="w-full rounded-full gradient-primary py-2.5 text-sm font-bold text-primary-foreground shadow-soft"
+        >
+          {current ? "حدّثي يومياتي 💾" : "احفظي يومياتي 💗"}
+        </button>
+        <p className="text-center text-[10px] text-muted-foreground">
+          يومياتك محفوظة ما تروح — ترجعين لها متى ما بغيتي 🌙
+        </p>
+      </Card>
+
+      {entries.length > 0 && (
+        <Card className="mt-3 space-y-2 p-3">
+          <p className="px-1 text-xs font-bold text-muted-foreground">أرشيف يومياتي ({entries.length})</p>
+          {visible.map((e) => (
+            <div key={e.id} className="rounded-2xl bg-muted/40 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold">
+                  {moods.find((m) => m.key === e.mood)?.emoji} {dayLabel(e.date)}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => pickDate(e.date)} className="text-muted-foreground hover:text-primary" aria-label="فتح">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => onRemove(e.id)} className="text-muted-foreground hover:text-destructive" aria-label="حذف">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              {e.happy && <p className="mt-1.5 text-xs text-success">🌷 {e.happy}</p>}
+              {e.sad && <p className="mt-1 text-xs text-destructive">🌧️ {e.sad}</p>}
+            </div>
+          ))}
+          {entries.length > 3 && (
+            <button onClick={() => setShowAll((v) => !v)} className="w-full rounded-full bg-muted py-2 text-xs font-semibold">
+              {showAll ? "إخفاء" : `عرض كل اليوميات (${entries.length})`}
+            </button>
+          )}
+        </Card>
+      )}
+    </>
   );
 }
 

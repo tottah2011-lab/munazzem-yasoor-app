@@ -73,7 +73,16 @@ export type WellnessListKey =
   | "concerns"
   | "workouts";
 
+export type JournalEntry = {
+  id: string;
+  date: string;
+  mood: "great" | "good" | "meh" | "bad";
+  happy: string;
+  sad: string;
+};
+
 export type WellnessState = {
+  journal: JournalEntry[];
   calorieTarget: number;
   waterCups: number;
   waterGoal: number;
@@ -236,6 +245,8 @@ type Ctx = MonthData & {
   resetAlinma: () => void;
 
   setWellness: (patch: Partial<WellnessState>) => void;
+  saveJournalEntry: (e: Omit<JournalEntry, "id">) => void;
+  removeJournalEntry: (id: string) => void;
   toggleWellnessItem: (list: WellnessListKey, id: string) => void;
   logWellnessSession: (list: WellnessListKey, id: string) => void;
   undoWellnessSession: (list: WellnessListKey, id: string) => void;
@@ -316,6 +327,7 @@ export function shiftMonth(key: string, delta: number) {
 }
 
 const defaultWellness: WellnessState = {
+  journal: [],
   calorieTarget: 2000,
   waterCups: 0,
   waterGoal: 8,
@@ -760,6 +772,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeDebt: (id) => patchMonth((m) => ({ debts: m.debts.filter((x) => x.id !== id) })),
 
       setWellness: (patch) => setState((s) => ({ ...s, wellness: { ...s.wellness, ...patch } })),
+      saveJournalEntry: (e) =>
+        setState((s) => {
+          const list = s.wellness.journal ?? [];
+          const existing = list.find((x) => x.date === e.date);
+          const next = existing
+            ? list.map((x) => (x.date === e.date ? { ...x, ...e } : x))
+            : [{ ...e, id: uid() }, ...list];
+          next.sort((a, b) => (a.date < b.date ? 1 : -1));
+          return { ...s, wellness: { ...s.wellness, journal: next, mood: e.mood } };
+        }),
+      removeJournalEntry: (id) =>
+        setState((s) => ({
+          ...s,
+          wellness: { ...s.wellness, journal: (s.wellness.journal ?? []).filter((x) => x.id !== id) },
+        })),
       toggleWellnessItem: (list, id) =>
         setState((s) => ({
           ...s,
