@@ -772,6 +772,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeDebt: (id) => patchMonth((m) => ({ debts: m.debts.filter((x) => x.id !== id) })),
 
       setWellness: (patch) => setState((s) => ({ ...s, wellness: { ...s.wellness, ...patch } })),
+      saveJournalEntry: (e) =>
+        setState((s) => {
+          const list = s.wellness.journal ?? [];
+          const existing = list.find((x) => x.date === e.date);
+          const next = existing
+            ? list.map((x) => (x.date === e.date ? { ...x, ...e } : x))
+            : [{ ...e, id: uid() }, ...list];
+          next.sort((a, b) => (a.date < b.date ? 1 : -1));
+          return { ...s, wellness: { ...s.wellness, journal: next, mood: e.mood } };
+        }),
+      removeJournalEntry: (id) =>
+        setState((s) => ({
+          ...s,
+          wellness: { ...s.wellness, journal: (s.wellness.journal ?? []).filter((x) => x.id !== id) },
+        })),
       toggleWellnessItem: (list, id) =>
         setState((s) => ({
           ...s,
