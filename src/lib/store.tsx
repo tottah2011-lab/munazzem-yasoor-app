@@ -325,6 +325,7 @@ export function shiftMonth(key: string, delta: number) {
 }
 
 const defaultWellness: WellnessState = {
+  journal: [],
   calorieTarget: 2000,
   waterCups: 0,
   waterGoal: 8,
