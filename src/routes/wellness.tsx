@@ -24,7 +24,7 @@ const moods = [
 ] as const;
 
 function Wellness() {
-  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq, logWellnessSession, undoWellnessSession } = useStore();
+  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq, logWellnessSession, undoWellnessSession, saveJournalEntry, removeJournalEntry } = useStore();
 
   return (
     <AppShell title="العناية وتطوير الذات 💖" subtitle="اهتمي بنفسك وطوّري ذاتك">
