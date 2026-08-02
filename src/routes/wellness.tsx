@@ -107,10 +107,10 @@ function Wellness() {
       <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالبشرة 🌸" icon={Smile} listKey="skinCare" items={wellness.skinCare}
-        allowFreq onSetFreq={setWellnessItemFreq}
+        allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
-        allowFreq onSetFreq={setWellnessItemFreq}
+        allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection
         title="مشاكل أبغى أحلها 💗"
