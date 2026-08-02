@@ -73,7 +73,16 @@ export type WellnessListKey =
   | "concerns"
   | "workouts";
 
+export type JournalEntry = {
+  id: string;
+  date: string;
+  mood: "great" | "good" | "meh" | "bad";
+  happy: string;
+  sad: string;
+};
+
 export type WellnessState = {
+  journal: JournalEntry[];
   calorieTarget: number;
   waterCups: number;
   waterGoal: number;
