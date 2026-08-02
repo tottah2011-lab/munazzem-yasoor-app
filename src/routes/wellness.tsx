@@ -86,23 +86,7 @@ function Wellness() {
         </div>
       </Card>
 
-      <SectionTitle>المزاج اليوم 🌈</SectionTitle>
-      <Card>
-        <div className="flex items-center justify-between gap-2">
-          {moods.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setWellness({ mood: m.key })}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-3 transition ${
-                wellness.mood === m.key ? "gradient-primary text-primary-foreground shadow-soft" : "bg-muted/50"
-              }`}
-            >
-              <span className="text-2xl">{m.emoji}</span>
-              <span className="text-[11px] font-medium">{m.label}</span>
-            </button>
-          ))}
-        </div>
-      </Card>
+      <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
 
       <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
