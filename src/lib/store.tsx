@@ -777,6 +777,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             }),
           },
         })),
+      logWellnessSession: (list, id) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) => {
+              if (x.id !== id) return x;
+              const freq = x.freq ?? "daily";
+              const today = new Date().toISOString().slice(0, 10);
+              const next = [...(x.doneDates ?? []), today];
+              const count = next.filter(isThisWeek).length;
+              return { ...x, doneDates: next, done: freq === "daily" ? true : count >= freqTarget(freq) };
+            }),
+          },
+        })),
+      undoWellnessSession: (list, id) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            [list]: s.wellness[list].map((x) => {
+              if (x.id !== id) return x;
+              const freq = x.freq ?? "daily";
+              const dates = [...(x.doneDates ?? [])];
+              for (let i = dates.length - 1; i >= 0; i--) {
+                if (isThisWeek(dates[i])) { dates.splice(i, 1); break; }
+              }
+              const count = dates.filter(isThisWeek).length;
+              return { ...x, doneDates: dates, done: freq === "daily" ? count > 0 : count >= freqTarget(freq) };
+            }),
+          },
+        })),
       addWellnessItem: (list, label, freq) =>
         setState((s) => ({
           ...s,
