@@ -167,7 +167,7 @@ const freqLabels: Record<WellnessFreq, string> = {
 const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
 
 function ChecklistSection({
-  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq,
+  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq, onLog, onUndo,
 }: {
   title: string;
   icon: typeof Utensils;
@@ -179,6 +179,8 @@ function ChecklistSection({
   onRemove: (list: WellnessListKey, id: string) => void;
   allowFreq?: boolean;
   onSetFreq?: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
+  onLog?: (list: WellnessListKey, id: string) => void;
+  onUndo?: (list: WellnessListKey, id: string) => void;
 }) {
   const done = items.filter((i) => i.done).length;
   const [editMode, setEditMode] = useState(false);
