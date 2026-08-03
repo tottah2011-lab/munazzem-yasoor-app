@@ -462,7 +462,7 @@ function normalizeMonth(m: Partial<MonthData> | undefined): MonthData {
     urgent: m.urgent ?? [],
     postponable: m.postponable ?? [],
     debts: m.debts ?? [],
-    monthlyPlan: (m.monthlyPlan ?? []).map((p) => ({ ...p, spent: p.spent ?? 0 })),
+    monthlyPlan: (m.monthlyPlan ?? []).map((p) => ({ ...p, spent: p.spent ?? 0, logs: p.logs ?? [] })),
     dailyExpenses: (m.dailyExpenses ?? []).map((d) => ({ ...d })),
     rewardClaimed: m.rewardClaimed ?? false,
     rewardNote: m.rewardNote,
