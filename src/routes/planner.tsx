@@ -407,7 +407,7 @@ function PlanItemCard({
         {quickAmounts.map((q) => (
           <button
             key={q}
-            onClick={() => onSpend(item.id, q)}
+            onClick={() => onSpend(item.id, q, date)}
             className="rounded-full bg-muted px-3 py-1 text-xs font-medium hover:bg-primary/10"
           >
             +{q}
