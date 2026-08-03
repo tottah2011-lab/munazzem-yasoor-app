@@ -24,6 +24,7 @@ export type PostponableExpense = {
   notes?: string;
   bought?: boolean;
   boughtDate?: string;
+  icon?: string;
 };
 
 
@@ -71,7 +72,8 @@ export type WellnessListKey =
   | "onlineWork"
   | "achievements"
   | "concerns"
-  | "workouts";
+  | "workouts"
+  | "vitamins";
 
 export type JournalEntry = {
   id: string;
@@ -97,6 +99,7 @@ export type WellnessState = {
   achievements: WellnessItem[];
   concerns: WellnessItem[];
   workouts: WellnessItem[];
+  vitamins: WellnessItem[];
   sleepHours: number;
   mood: "great" | "good" | "meh" | "bad";
   steps: number;
@@ -387,6 +390,12 @@ const defaultWellness: WellnessState = {
     { id: "wk2", label: "بلانك 30 ثانية 🪷", done: false },
     { id: "wk3", label: "تمرين ذراعين بأوزان خفيفة 💪", done: false },
     { id: "wk4", label: "إطالة 5 دقائق 🧘‍♀️", done: false },
+  ],
+  vitamins: [
+    { id: "vt1", label: "فيتامين د ☀️", done: false, freq: "weekly", doneDates: [] },
+    { id: "vt2", label: "حديد 🩸", done: false, freq: "daily", doneDates: [] },
+    { id: "vt3", label: "أوميقا 3 🐟", done: false, freq: "daily", doneDates: [] },
+    { id: "vt4", label: "بيوتين للشعر 💇‍♀️", done: false, freq: "daily", doneDates: [] },
   ],
   sleepHours: 7,
   mood: "good",
