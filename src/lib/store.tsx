@@ -928,7 +928,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             });
           }
         }
-        const day = date || todayKey();
+        const day = date || new Date().toISOString().slice(0, 10);
         patchMonth((m) => ({
           monthlyPlan: m.monthlyPlan.map((x) =>
             x.id === id
