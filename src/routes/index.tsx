@@ -155,6 +155,13 @@ function Dashboard() {
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
 
+      <SectionTitle>نسبة التقدم ⚡</SectionTitle>
+      <Card className="grid grid-cols-4 gap-2">
+        {progress.map((p) => (
+          <MiniRing key={p.label} label={p.label} pct={p.pct} color={p.color} emoji={p.emoji} />
+        ))}
+      </Card>
+
 
       <SectionTitle>توزيع المصاريف 🎨</SectionTitle>
       <Card>
