@@ -272,7 +272,8 @@ type Ctx = MonthData & {
 
   addPlanItem: (p: Omit<PlanItem, "id" | "spent"> & { spent?: number }) => void;
   updatePlanItem: (id: string, patch: Partial<PlanItem>) => void;
-  spendOnPlan: (id: string, amount: number) => void;
+  spendOnPlan: (id: string, amount: number, date?: string) => void;
+  removePlanLog: (id: string, logId: string) => void;
   resetPlanSpent: (id: string) => void;
   removePlanItem: (id: string) => void;
 
