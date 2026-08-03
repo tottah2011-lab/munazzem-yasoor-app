@@ -5,6 +5,13 @@ import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
 
+function formatDay(d: string) {
+  const dt = new Date(`${d}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString("ar-SA-u-ca-gregory", { day: "numeric", month: "long", weekday: "short" });
+}
+
+
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
