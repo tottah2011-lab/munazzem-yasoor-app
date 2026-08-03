@@ -913,7 +913,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         patchMonth((m) => ({ monthlyPlan: [...m.monthlyPlan, { ...p, spent: p.spent ?? 0, id: uid() }] })),
       updatePlanItem: (id, patch) =>
         patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
-      spendOnPlan: (id, amount) => {
+      spendOnPlan: (id, amount, date) => {
         const item = cm.monthlyPlan.find((x) => x.id === id);
         if (item && amount > 0) {
           const newSpent = item.spent + amount;
@@ -928,14 +928,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             });
           }
         }
+        const day = date || todayKey();
         patchMonth((m) => ({
           monthlyPlan: m.monthlyPlan.map((x) =>
-            x.id === id ? { ...x, spent: Math.max(0, x.spent + amount) } : x,
+            x.id === id
+              ? {
+                  ...x,
+                  spent: Math.max(0, x.spent + amount),
+                  logs: [{ id: uid(), date: day, amount }, ...(x.logs ?? [])],
+                }
+              : x,
           ),
         }));
       },
+      removePlanLog: (id, logId) =>
+        patchMonth((m) => ({
+          monthlyPlan: m.monthlyPlan.map((x) => {
+            if (x.id !== id) return x;
+            const log = (x.logs ?? []).find((l) => l.id === logId);
+            if (!log) return x;
+            return {
+              ...x,
+              spent: Math.max(0, x.spent - log.amount),
+              logs: (x.logs ?? []).filter((l) => l.id !== logId),
+            };
+          }),
+        })),
       resetPlanSpent: (id) =>
-        patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.map((x) => (x.id === id ? { ...x, spent: 0 } : x)) })),
+        patchMonth((m) => ({
+          monthlyPlan: m.monthlyPlan.map((x) => (x.id === id ? { ...x, spent: 0, logs: [] } : x)),
+        })),
       removePlanItem: (id) =>
         patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.filter((x) => x.id !== id) })),
 
