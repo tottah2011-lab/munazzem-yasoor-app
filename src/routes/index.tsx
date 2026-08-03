@@ -253,3 +253,24 @@ function StatCard({
     </Link>
   );
 }
+
+function MiniRing({ label, pct, color, emoji }: { label: string; pct: number; color: string; emoji: string }) {
+  const r = 20;
+  const c = 2 * Math.PI * r;
+  const dash = (Math.min(100, Math.max(0, pct)) / 100) * c;
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative h-14 w-14">
+        <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
+          <circle cx="24" cy="24" r={r} fill="none" stroke="var(--muted)" strokeWidth="5" />
+          <circle
+            cx="24" cy="24" r={r} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
+            strokeDasharray={`${dash} ${c}`} className="transition-all"
+          />
+        </svg>
+        <span className="absolute inset-0 grid place-items-center text-[11px] font-bold">{pct}%</span>
+      </div>
+      <p className="text-center text-[10px] leading-tight text-muted-foreground">{emoji} {label}</p>
+    </div>
+  );
+}
