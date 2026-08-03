@@ -116,12 +116,19 @@ export type SavingsGoal = {
   notes?: string;
 };
 
+export type PlanSpendLog = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  amount: number;
+};
+
 export type PlanItem = {
   id: string;
   category: string;
   amount: number;
   spent: number;
   icon?: string;
+  logs?: PlanSpendLog[];
 };
 
 export type ExtraIncome = {
