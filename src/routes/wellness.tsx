@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
+import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Pill, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { useStore, isThisWeek, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq, type JournalEntry } from "@/lib/store";
 
@@ -87,6 +87,10 @@ function Wellness() {
       </Card>
 
       <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
+
+      <ChecklistSection title="فيتاميناتي 💊" icon={Pill} listKey="vitamins" items={wellness.vitamins ?? []}
+        allowFreq showDates onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
 
       <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
@@ -245,6 +249,9 @@ function JournalSection({
   );
 }
 
+const shortDay = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "short", day: "numeric", month: "numeric" });
+
 function NumberCard({
   icon: Icon, label, value, suffix, step = 1, onChange,
 }: { icon: typeof Droplets; label: string; value: number; suffix: string; step?: number; onChange: (v: number) => void }) {
@@ -277,7 +284,7 @@ const freqLabels: Record<WellnessFreq, string> = {
 const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
 
 function ChecklistSection({
-  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq, onLog, onUndo,
+  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq, onLog, onUndo, showDates,
 }: {
   title: string;
   icon: typeof Utensils;
@@ -291,6 +298,7 @@ function ChecklistSection({
   onSetFreq?: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
   onLog?: (list: WellnessListKey, id: string) => void;
   onUndo?: (list: WellnessListKey, id: string) => void;
+  showDates?: boolean;
 }) {
   const done = items.filter((i) => i.done).length;
   const [editMode, setEditMode] = useState(false);
@@ -383,6 +391,18 @@ function ChecklistSection({
                       <span className="text-[10px] text-muted-foreground">
                         {weekly ? `${weekCount}/${target} هالأسبوع` : `${weekCount} جلسة هالأسبوع`}
                       </span>
+                    </div>
+                  )}
+                  {showDates && (i.doneDates ?? []).length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {[...(i.doneDates ?? [])].sort().reverse().slice(0, 6).map((d, k) => (
+                        <span key={d + k} className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
+                          {shortDay(d)}
+                        </span>
+                      ))}
+                      {(i.doneDates ?? []).length > 6 && (
+                        <span className="text-[10px] text-muted-foreground">+{(i.doneDates ?? []).length - 6}</span>
+                      )}
                     </div>
                   )}
                 </div>
