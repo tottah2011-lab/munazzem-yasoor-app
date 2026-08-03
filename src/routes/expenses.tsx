@@ -484,6 +484,8 @@ const wishCategories = [
   { key: "أخرى", emoji: "✨" },
 ] as const;
 
+const iconChoices = ["💄","👗","👜","👟","💍","🧴","🌸","☕","📱","💻","🎧","🚗","⛽","🏠","🛋️","🎁","✈️","📚","🍰","🪞","🕯️","💗","✨","🎀"];
+
 function wishEmoji(cat?: string) {
   return wishCategories.find((c) => c.key === cat)?.emoji ?? "✨";
 }
@@ -496,6 +498,7 @@ function WishlistSection({
   const [amount, setAmount] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [category, setCategory] = useState<string>("عناية");
+  const [icon, setIcon] = useState<string>("");
   const [filter, setFilter] = useState<string>("الكل");
 
   const cats = ["الكل", ...wishCategories.map((c) => c.key)];
@@ -532,6 +535,28 @@ function WishlistSection({
             </div>
           </div>
           <div>
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">اختاري الأيقونة 🎨</span>
+            <div className="flex flex-wrap gap-1.5">
+              {iconChoices.map((em) => (
+                <button
+                  key={em}
+                  onClick={() => setIcon(em)}
+                  className={`grid h-9 w-9 place-items-center rounded-2xl text-lg transition ${
+                    icon === em ? "gradient-primary shadow-soft" : "bg-muted"
+                  }`}
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
+            <input
+              value={icon}
+              onChange={(e) => setIcon(e.target.value.slice(0, 2))}
+              placeholder="أو اكتبي إيموجي من عندك ✍️"
+              className="mt-2 w-full rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div>
             <span className="mb-1 block text-xs font-medium text-muted-foreground">كم تشتهينه؟</span>
             <div className="flex gap-2">
               {(["high", "medium", "low"] as const).map((p) => (
@@ -551,8 +576,8 @@ function WishlistSection({
             <button
               onClick={() => {
                 if (!name || !amount) return;
-                addPostponable({ name, amount: Number(amount), priority, category });
-                setName(""); setAmount(""); setPriority("medium"); setShowForm(false);
+                addPostponable({ name, amount: Number(amount), priority, category, icon: icon || undefined });
+                setName(""); setAmount(""); setPriority("medium"); setIcon(""); setShowForm(false);
               }}
               className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
             >حفظ</button>
@@ -621,7 +646,7 @@ function WishlistSection({
                           e.bought ? "bg-success/15 text-success" : "bg-primary/10 text-primary"
                         }`}
                       >
-                        {e.bought ? "🎀" : wishEmoji(e.category)}
+                        {e.bought ? "🎀" : (e.icon || wishEmoji(e.category))}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
