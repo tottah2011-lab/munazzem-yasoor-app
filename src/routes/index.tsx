@@ -75,6 +75,27 @@ function Dashboard() {
   if (tips.length === 0)
     tips.push({ icon: Sparkles, text: "أحسنتِ! أموالك تحت السيطرة هذا الشهر 💚", tone: "text-success" });
 
+  const progress = useMemo(() => {
+    const installments = urgent.filter((x) => x.installment && x.installment.monthsTotal > 0);
+    const monthsTotal = installments.reduce((s, e) => s + e.installment!.monthsTotal, 0);
+    const monthsPaid = installments.reduce((s, e) => s + e.installment!.monthsPaid, 0);
+    const paidCount = urgent.filter((u) => u.paid).length;
+    const planBudget = monthlyPlan.reduce((s, p) => s + p.amount, 0);
+    const planSpent = monthlyPlan.reduce((s, p) => s + p.spent, 0);
+    const pctOf = (a: number, b: number) => (b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0);
+    return [
+      { label: "الميزانية", emoji: "💰", pct: totals.usedPct, color: "var(--chart-1)" },
+      { label: "الالتزامات", emoji: "✅", pct: pctOf(paidCount, urgent.length), color: "var(--chart-2)" },
+      { label: "التقسيط", emoji: "🗓️", pct: pctOf(monthsPaid, monthsTotal), color: "var(--chart-4)" },
+      { label: "الإنماء", emoji: "🏦", pct: pctOf(alinmaPaid, alinmaSavings.total), color: "var(--chart-3)" },
+      { label: "الخطة", emoji: "📋", pct: pctOf(planSpent, planBudget), color: "var(--chart-1)" },
+      { label: "الادخار", emoji: "💗", pct: pctOf(extrasTotal, Math.max(totalIncome, 1)), color: "var(--chart-2)" },
+      { label: "صرف طارئ", emoji: "⚡", pct: pctOf(totals.emergencyTotal, Math.max(totalIncome, 1)), color: "var(--chart-4)" },
+      { label: "صرف عشوائي", emoji: "🎲", pct: pctOf(totals.randomTotal, Math.max(totals.emergencyTotal, 1)), color: "var(--chart-3)" },
+    ];
+  }, [urgent, monthlyPlan, totals, alinmaPaid, alinmaSavings.total, extrasTotal, totalIncome]);
+
+
 
   return (
     <AppShell title={`أهلًا 💖 — ${monthLabel(currentMonth)}`} subtitle={`إجمالي دخلك ${formatSAR(totalIncome)}`}>
