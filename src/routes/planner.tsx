@@ -5,6 +5,13 @@ import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
 
+function formatDay(d: string) {
+  const dt = new Date(`${d}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString("ar-SA-u-ca-gregory", { day: "numeric", month: "long", weekday: "short" });
+}
+
+
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
@@ -358,7 +365,11 @@ function PlanItemCard({
   onSpend: ReturnType<typeof useStore>["spendOnPlan"];
   onReset: ReturnType<typeof useStore>["resetPlanSpent"];
 }) {
+  const { removePlanLog } = useStore();
   const [val, setVal] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [showLogs, setShowLogs] = useState(false);
+  const logs = item.logs ?? [];
   const remaining = item.amount - item.spent;
   const pct = item.amount > 0 ? Math.min(100, Math.round((item.spent / item.amount) * 100)) : 0;
   const over = item.spent > item.amount;
@@ -396,7 +407,7 @@ function PlanItemCard({
         {quickAmounts.map((q) => (
           <button
             key={q}
-            onClick={() => onSpend(item.id, q)}
+            onClick={() => onSpend(item.id, q, date)}
             className="rounded-full bg-muted px-3 py-1 text-xs font-medium hover:bg-primary/10"
           >
             +{q}
@@ -411,10 +422,16 @@ function PlanItemCard({
             value={val}
             onChange={(e) => setVal(e.target.value)}
             placeholder="مبلغ"
-            className="w-full rounded-full border border-border bg-input/50 px-3 py-2 text-center text-sm outline-none focus:border-primary"
+            className="w-24 rounded-full border border-border bg-input/50 px-3 py-2 text-center text-sm outline-none focus:border-primary"
+          />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="min-w-0 flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-center text-xs outline-none focus:border-primary"
           />
           <button
-            onClick={() => { if (val) { onSpend(item.id, Math.abs(Number(val))); setVal(""); } }}
+            onClick={() => { if (val) { onSpend(item.id, Math.abs(Number(val)), date); setVal(""); } }}
             className="grid h-9 shrink-0 place-items-center gap-1 rounded-full gradient-primary px-3 text-xs font-semibold text-primary-foreground"
           >
             <ShoppingBag className="h-3.5 w-3.5 inline ml-1" />
@@ -430,6 +447,36 @@ function PlanItemCard({
           <RotateCcw className="h-4 w-4" />
         </button>
       </div>
+
+      {logs.length > 0 && (
+        <div className="mt-3 rounded-2xl bg-muted/50 p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-muted-foreground">📅 تواريخ الاستخدام</p>
+            {logs.length > 3 && (
+              <button onClick={() => setShowLogs((v) => !v)} className="text-[11px] font-medium text-primary">
+                {showLogs ? "إخفاء" : `عرض الكل (${logs.length})`}
+              </button>
+            )}
+          </div>
+          <ul className="mt-2 space-y-1.5">
+            {(showLogs ? logs : logs.slice(0, 3)).map((l) => (
+              <li key={l.id} className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-muted-foreground">{formatDay(l.date)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{formatSAR(l.amount)}</span>
+                  <button
+                    onClick={() => removePlanLog(item.id, l.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="حذف العملية"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-2 flex items-center gap-2 text-xs">
         <span className="text-muted-foreground">الميزانية:</span>

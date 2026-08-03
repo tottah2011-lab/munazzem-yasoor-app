@@ -20,11 +20,12 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const {
     income, totalIncome, extrasTotal, urgent, dailyExpenses, currentMonth, rewardClaimed,
-    isLate, daysLate, paymentDueDate, alinmaSavings,
+    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan,
   } = useStore();
 
   const alinmaPaid = alinmaSavings.payments.reduce((s, p) => s + p.amount, 0);
   const alinmaLeft = Math.max(0, alinmaSavings.total - alinmaPaid);
+
 
 
   const totals = useMemo(() => {
@@ -73,6 +74,27 @@ function Dashboard() {
     tips.push({ icon: Gift, text: "استلمتِ مكافأتك هذا الشهر! تستاهلين 🎁", tone: "text-warning" });
   if (tips.length === 0)
     tips.push({ icon: Sparkles, text: "أحسنتِ! أموالك تحت السيطرة هذا الشهر 💚", tone: "text-success" });
+
+  const progress = useMemo(() => {
+    const installments = urgent.filter((x) => x.installment && x.installment.monthsTotal > 0);
+    const monthsTotal = installments.reduce((s, e) => s + e.installment!.monthsTotal, 0);
+    const monthsPaid = installments.reduce((s, e) => s + e.installment!.monthsPaid, 0);
+    const paidCount = urgent.filter((u) => u.paid).length;
+    const planBudget = monthlyPlan.reduce((s, p) => s + p.amount, 0);
+    const planSpent = monthlyPlan.reduce((s, p) => s + p.spent, 0);
+    const pctOf = (a: number, b: number) => (b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0);
+    return [
+      { label: "الميزانية", emoji: "💰", pct: totals.usedPct, color: "var(--chart-1)" },
+      { label: "الالتزامات", emoji: "✅", pct: pctOf(paidCount, urgent.length), color: "var(--chart-2)" },
+      { label: "التقسيط", emoji: "🗓️", pct: pctOf(monthsPaid, monthsTotal), color: "var(--chart-4)" },
+      { label: "الإنماء", emoji: "🏦", pct: pctOf(alinmaPaid, alinmaSavings.total), color: "var(--chart-3)" },
+      { label: "الخطة", emoji: "📋", pct: pctOf(planSpent, planBudget), color: "var(--chart-1)" },
+      { label: "الادخار", emoji: "💗", pct: pctOf(extrasTotal, Math.max(totalIncome, 1)), color: "var(--chart-2)" },
+      { label: "صرف طارئ", emoji: "⚡", pct: pctOf(totals.emergencyTotal, Math.max(totalIncome, 1)), color: "var(--chart-4)" },
+      { label: "صرف عشوائي", emoji: "🎲", pct: pctOf(totals.randomTotal, Math.max(totals.emergencyTotal, 1)), color: "var(--chart-3)" },
+    ];
+  }, [urgent, monthlyPlan, totals, alinmaPaid, alinmaSavings.total, extrasTotal, totalIncome]);
+
 
 
   return (
@@ -154,6 +176,13 @@ function Dashboard() {
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
 
+      <SectionTitle>نسبة التقدم ⚡</SectionTitle>
+      <Card className="grid grid-cols-4 gap-2">
+        {progress.map((p) => (
+          <MiniRing key={p.label} label={p.label} pct={p.pct} color={p.color} emoji={p.emoji} />
+        ))}
+      </Card>
+
 
       <SectionTitle>توزيع المصاريف 🎨</SectionTitle>
       <Card>
@@ -222,5 +251,26 @@ function StatCard({
       <p className="mt-3 text-[11px] text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-lg font-bold">{value}</p>
     </Link>
+  );
+}
+
+function MiniRing({ label, pct, color, emoji }: { label: string; pct: number; color: string; emoji: string }) {
+  const r = 20;
+  const c = 2 * Math.PI * r;
+  const dash = (Math.min(100, Math.max(0, pct)) / 100) * c;
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative h-14 w-14">
+        <svg viewBox="0 0 48 48" className="h-full w-full -rotate-90">
+          <circle cx="24" cy="24" r={r} fill="none" stroke="var(--muted)" strokeWidth="5" />
+          <circle
+            cx="24" cy="24" r={r} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
+            strokeDasharray={`${dash} ${c}`} className="transition-all"
+          />
+        </svg>
+        <span className="absolute inset-0 grid place-items-center text-[11px] font-bold">{pct}%</span>
+      </div>
+      <p className="text-center text-[10px] leading-tight text-muted-foreground">{emoji} {label}</p>
+    </div>
   );
 }

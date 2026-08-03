@@ -116,12 +116,19 @@ export type SavingsGoal = {
   notes?: string;
 };
 
+export type PlanSpendLog = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  amount: number;
+};
+
 export type PlanItem = {
   id: string;
   category: string;
   amount: number;
   spent: number;
   icon?: string;
+  logs?: PlanSpendLog[];
 };
 
 export type ExtraIncome = {
@@ -265,7 +272,8 @@ type Ctx = MonthData & {
 
   addPlanItem: (p: Omit<PlanItem, "id" | "spent"> & { spent?: number }) => void;
   updatePlanItem: (id: string, patch: Partial<PlanItem>) => void;
-  spendOnPlan: (id: string, amount: number) => void;
+  spendOnPlan: (id: string, amount: number, date?: string) => void;
+  removePlanLog: (id: string, logId: string) => void;
   resetPlanSpent: (id: string) => void;
   removePlanItem: (id: string) => void;
 
@@ -454,7 +462,7 @@ function normalizeMonth(m: Partial<MonthData> | undefined): MonthData {
     urgent: m.urgent ?? [],
     postponable: m.postponable ?? [],
     debts: m.debts ?? [],
-    monthlyPlan: (m.monthlyPlan ?? []).map((p) => ({ ...p, spent: p.spent ?? 0 })),
+    monthlyPlan: (m.monthlyPlan ?? []).map((p) => ({ ...p, spent: p.spent ?? 0, logs: p.logs ?? [] })),
     dailyExpenses: (m.dailyExpenses ?? []).map((d) => ({ ...d })),
     rewardClaimed: m.rewardClaimed ?? false,
     rewardNote: m.rewardNote,
@@ -905,7 +913,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         patchMonth((m) => ({ monthlyPlan: [...m.monthlyPlan, { ...p, spent: p.spent ?? 0, id: uid() }] })),
       updatePlanItem: (id, patch) =>
         patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
-      spendOnPlan: (id, amount) => {
+      spendOnPlan: (id, amount, date) => {
         const item = cm.monthlyPlan.find((x) => x.id === id);
         if (item && amount > 0) {
           const newSpent = item.spent + amount;
@@ -920,14 +928,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             });
           }
         }
+        const day = date || new Date().toISOString().slice(0, 10);
         patchMonth((m) => ({
           monthlyPlan: m.monthlyPlan.map((x) =>
-            x.id === id ? { ...x, spent: Math.max(0, x.spent + amount) } : x,
+            x.id === id
+              ? {
+                  ...x,
+                  spent: Math.max(0, x.spent + amount),
+                  logs: [{ id: uid(), date: day, amount }, ...(x.logs ?? [])],
+                }
+              : x,
           ),
         }));
       },
+      removePlanLog: (id, logId) =>
+        patchMonth((m) => ({
+          monthlyPlan: m.monthlyPlan.map((x) => {
+            if (x.id !== id) return x;
+            const log = (x.logs ?? []).find((l) => l.id === logId);
+            if (!log) return x;
+            return {
+              ...x,
+              spent: Math.max(0, x.spent - log.amount),
+              logs: (x.logs ?? []).filter((l) => l.id !== logId),
+            };
+          }),
+        })),
       resetPlanSpent: (id) =>
-        patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.map((x) => (x.id === id ? { ...x, spent: 0 } : x)) })),
+        patchMonth((m) => ({
+          monthlyPlan: m.monthlyPlan.map((x) => (x.id === id ? { ...x, spent: 0, logs: [] } : x)),
+        })),
       removePlanItem: (id) =>
         patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.filter((x) => x.id !== id) })),
 
