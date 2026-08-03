@@ -358,7 +358,11 @@ function PlanItemCard({
   onSpend: ReturnType<typeof useStore>["spendOnPlan"];
   onReset: ReturnType<typeof useStore>["resetPlanSpent"];
 }) {
+  const { removePlanLog } = useStore();
   const [val, setVal] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [showLogs, setShowLogs] = useState(false);
+  const logs = item.logs ?? [];
   const remaining = item.amount - item.spent;
   const pct = item.amount > 0 ? Math.min(100, Math.round((item.spent / item.amount) * 100)) : 0;
   const over = item.spent > item.amount;
