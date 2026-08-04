@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PartyPopper, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, isThisWeek, monthLabel, useStore } from "@/lib/store";
 
@@ -105,6 +105,28 @@ function Dashboard() {
     return { allowance, spent, pct, weeksLeft, over: spent > allowance };
   }, [totals.remaining, dailyExpenses]);
 
+  const doneInstallments = useMemo(
+    () =>
+      urgent.filter(
+        (x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid >= x.installment.monthsTotal,
+      ),
+    [urgent],
+  );
+
+  // 🎀 بطاقة اليوم — تتبدّل كل يوم بشكل تلقائي
+  const dailyCard = useMemo(() => {
+    const cards = [
+      { emoji: "🌷", title: "همسة اليوم", text: "كل ريال توفّرينه اليوم هو راحة بال بكرة." },
+      { emoji: "🫧", title: "تحدي اليوم", text: "جربي يوم بدون أي صرف عشوائي — تقدرين!" },
+      { emoji: "🌙", title: "تذكير حلو", text: "الميزانية مو حرمان… هي اختيار للي يستاهل." },
+      { emoji: "🍰", title: "دلال بحساب", text: "خصّصي مبلغ صغير لدلعك، وخليه مخطط له." },
+      { emoji: "🦋", title: "خطوة صغيرة", text: "راجعي خطة الإنفاق دقيقة وحدة بس — يفرق." },
+      { emoji: "💎", title: "قيمة", text: "اسألي نفسك: بأحتاجه بعد أسبوع؟ إذا لا، أجّليه." },
+      { emoji: "🎠", title: "فرح", text: "احتفلي بأي التزام سددتيه، مهما كان صغير 💗" },
+    ];
+    const idx = Math.floor(Date.now() / 86400000) % cards.length;
+    return cards[idx];
+  }, []);
 
 
   return (
@@ -177,6 +199,37 @@ function Dashboard() {
         </div>
         <ArrowLeft className="h-4 w-4 shrink-0" />
       </Link>
+
+      {/* 🎉 أقساط مكتملة */}
+      {doneInstallments.length > 0 && (
+        <div className="relative mt-4 overflow-hidden rounded-3xl gradient-primary p-5 text-primary-foreground shadow-elegant">
+          <div className="absolute -top-8 -right-6 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+          <div className="absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="flex items-center gap-2">
+            <PartyPopper className="h-5 w-5" />
+            <p className="text-sm font-black">مبروك! قفلتِ قسط كامل 🎉</p>
+          </div>
+          <p className="mt-1 text-xs opacity-90">
+            خلّصتِ {doneInstallments.length} قسط بالكامل — التزامك يستاهل احتفال 💗
+          </p>
+          <div className="mt-3 space-y-2">
+            {doneInstallments.map((x) => (
+              <div key={x.id} className="flex items-center justify-between rounded-2xl bg-white/15 px-3 py-2 text-xs">
+                <div className="min-w-0">
+                  <p className="truncate font-bold">{x.name}</p>
+                  <p className="opacity-90">
+                    {x.installment!.monthsTotal} شهر × {formatSAR(x.amount)}
+                  </p>
+                </div>
+                <div className="shrink-0 text-left">
+                  <p className="font-black">{formatSAR(x.amount * x.installment!.monthsTotal)}</p>
+                  <p className="opacity-90">مسدّد بالكامل ✅</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stat grid */}
       <div className="mt-4 grid grid-cols-2 gap-3">
@@ -264,6 +317,24 @@ function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* 🎀 بطاقة اليوم — مفاجأة تتبدّل كل يوم */}
+      <SectionTitle>بطاقة اليوم 🎀</SectionTitle>
+      <div className="group relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 p-5">
+        <span className="pointer-events-none absolute -top-6 -left-4 select-none text-6xl opacity-15 transition-transform duration-500 group-hover:rotate-12">
+          {dailyCard.emoji}
+        </span>
+        <div className="relative flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-card/70 text-xl shadow-soft">
+            {dailyCard.emoji}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-black text-primary">{dailyCard.title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{dailyCard.text}</p>
+          </div>
+        </div>
+      </div>
+
 
       <p className={`mt-6 text-center text-xs ${remainingTone}`}>
         الرصيد المتوقع حتى نهاية الشهر: <span className="font-bold">{formatSAR(totals.remaining)}</span>
