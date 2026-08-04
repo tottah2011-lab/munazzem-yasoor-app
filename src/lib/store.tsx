@@ -421,9 +421,11 @@ const defaultWellness: WellnessState = {
 };
 
 
-function emptyMonth(income = 2000): MonthData {
+function emptyMonth(income?: number): MonthData {
+  const incomeSources = defaultIncomeSources();
   return {
-    income,
+    income: income ?? incomeSources.reduce((s, x) => s + x.amount, 0),
+    incomeSources,
     extraIncome: [],
     urgent: [],
     postponable: [],
@@ -435,8 +437,10 @@ function emptyMonth(income = 2000): MonthData {
 }
 
 function seedMonth(): MonthData {
+  const incomeSources = defaultIncomeSources();
   return {
-    income: 2000,
+    income: incomeSources.reduce((s, x) => s + x.amount, 0),
+    incomeSources,
     extraIncome: [],
     urgent: [
       { id: uid(), name: "الإيجار", amount: 800, dueDate: "", paid: false, category: "سكن" },
