@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, monthLabel, useStore } from "@/lib/store";
+import { formatSAR, isThisWeek, monthLabel, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -95,6 +95,16 @@ function Dashboard() {
     ];
   }, [urgent, monthlyPlan, totals, alinmaPaid, alinmaSavings.total, extrasTotal, totalIncome]);
 
+  const weekly = useMemo(() => {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const weeksLeft = Math.max(1, Math.ceil((daysInMonth - now.getDate() + 1) / 7));
+    const allowance = Math.max(0, Math.round(totals.remaining / weeksLeft));
+    const spent = dailyExpenses.filter((d) => isThisWeek(d.date)).reduce((s, d) => s + d.amount, 0);
+    const pct = Math.min(100, Math.round((spent / Math.max(allowance, 1)) * 100));
+    return { allowance, spent, pct, weeksLeft, over: spent > allowance };
+  }, [totals.remaining, dailyExpenses]);
+
 
 
   return (
@@ -175,6 +185,31 @@ function Dashboard() {
         <StatCard label="صرف طارئ" value={formatSAR(totals.emergencyTotal)} icon={Zap} to="/expenses" tone="from-warning/20 to-warning/5" />
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
+
+      <SectionTitle>مصروف الأسبوع 🗓️</SectionTitle>
+      <Card className={`border ${weekly.over ? "border-destructive/30 bg-destructive/5" : "border-success/20 bg-success/5"}`}>
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">حدّك الأسبوعي</p>
+            <p className="text-2xl font-black">{formatSAR(weekly.allowance)}</p>
+          </div>
+          <div className="text-left">
+            <p className="text-[11px] text-muted-foreground">صرفتِ هالأسبوع</p>
+            <p className={`text-lg font-bold ${weekly.over ? "text-destructive" : "text-success"}`}>{formatSAR(weekly.spent)}</p>
+          </div>
+        </div>
+        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full transition-all ${weekly.over ? "bg-destructive" : "bg-success"}`}
+            style={{ width: `${weekly.pct}%` }}
+          />
+        </div>
+        <p className={`mt-2 text-xs ${weekly.over ? "text-destructive" : "text-muted-foreground"}`}>
+          {weekly.over
+            ? `تجاوزتِ حدّك بـ ${formatSAR(weekly.spent - weekly.allowance)} — خفّفي شوي 💗`
+            : `باقي لك ${formatSAR(weekly.allowance - weekly.spent)} لين نهاية الأسبوع ✨ (${weekly.weeksLeft} أسبوع متبقي بالشهر)`}
+        </p>
+      </Card>
 
       <SectionTitle>نسبة التقدم ⚡</SectionTitle>
       <Card className="grid grid-cols-4 gap-2">

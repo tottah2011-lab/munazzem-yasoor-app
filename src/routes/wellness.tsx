@@ -86,7 +86,7 @@ function Wellness() {
         </div>
       </Card>
 
-      <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
+      
 
       <ChecklistSection title="فيتاميناتي 💊" icon={Pill} listKey="vitamins" items={wellness.vitamins ?? []}
         allowFreq showDates onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
@@ -99,10 +99,6 @@ function Wellness() {
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
         allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-      <ChecklistSection
-        title="مشاكل أبغى أحلها 💗"
-        icon={HeartPulse} listKey="concerns" items={wellness.concerns}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection
         title="جدول تمارين المقاومة 🏋️‍♀️"
@@ -119,6 +115,13 @@ function Wellness() {
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
       <ChecklistSection title="إنجازاتي 🏆" icon={Award} listKey="achievements" items={wellness.achievements}
         onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+
+      <ChecklistSection
+        title="مشاكل أبغى أحلها 💗"
+        icon={HeartPulse} listKey="concerns" items={wellness.concerns}
+        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+
+      <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
     </AppShell>
   );
 }
