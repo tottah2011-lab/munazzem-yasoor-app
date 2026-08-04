@@ -176,6 +176,31 @@ function Dashboard() {
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
 
+      <SectionTitle>مصروف الأسبوع 🗓️</SectionTitle>
+      <Card className={`border ${weekly.over ? "border-destructive/30 bg-destructive/5" : "border-success/20 bg-success/5"}`}>
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">حدّك الأسبوعي</p>
+            <p className="text-2xl font-black">{formatSAR(weekly.allowance)}</p>
+          </div>
+          <div className="text-left">
+            <p className="text-[11px] text-muted-foreground">صرفتِ هالأسبوع</p>
+            <p className={`text-lg font-bold ${weekly.over ? "text-destructive" : "text-success"}`}>{formatSAR(weekly.spent)}</p>
+          </div>
+        </div>
+        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full transition-all ${weekly.over ? "bg-destructive" : "bg-success"}`}
+            style={{ width: `${weekly.pct}%` }}
+          />
+        </div>
+        <p className={`mt-2 text-xs ${weekly.over ? "text-destructive" : "text-muted-foreground"}`}>
+          {weekly.over
+            ? `تجاوزتِ حدّك بـ ${formatSAR(weekly.spent - weekly.allowance)} — خفّفي شوي 💗`
+            : `باقي لك ${formatSAR(weekly.allowance - weekly.spent)} لين نهاية الأسبوع ✨ (${weekly.weeksLeft} أسبوع متبقي بالشهر)`}
+        </p>
+      </Card>
+
       <SectionTitle>نسبة التقدم ⚡</SectionTitle>
       <Card className="grid grid-cols-4 gap-2">
         {progress.map((p) => (
