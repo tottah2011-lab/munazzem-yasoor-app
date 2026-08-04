@@ -745,6 +745,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       setIncome: (n) => patchMonth({ income: Math.max(0, n) }),
 
+      addIncomeSource: (s) =>
+        patchMonth((m) => {
+          const incomeSources = [...m.incomeSources, { ...s, id: uid() }];
+          return { incomeSources, income: incomeSources.reduce((a, b) => a + b.amount, 0) };
+        }),
+      updateIncomeSource: (id, patch) =>
+        patchMonth((m) => {
+          const incomeSources = m.incomeSources.map((x) => (x.id === id ? { ...x, ...patch } : x));
+          return { incomeSources, income: incomeSources.reduce((a, b) => a + b.amount, 0) };
+        }),
+      removeIncomeSource: (id) =>
+        patchMonth((m) => {
+          const incomeSources = m.incomeSources.filter((x) => x.id !== id);
+          return { incomeSources, income: incomeSources.reduce((a, b) => a + b.amount, 0) };
+        }),
+      toggleIncomeReceived: (id) =>
+        patchMonth((m) => {
+          const item = m.incomeSources.find((x) => x.id === id);
+          if (item && !item.received) toast.success("نزل رصيدك! 💰", { description: `${item.name} — ${item.amount} ر.س` });
+          return { incomeSources: m.incomeSources.map((x) => (x.id === id ? { ...x, received: !x.received } : x)) };
+        }),
+
+
       addExtraIncome: (e) => {
         toast.success("رصيد جديد أضيف! 💰", { description: `${e.source} — ${e.amount} ر.س` });
         patchMonth((m) => ({ extraIncome: [{ ...e, id: uid() }, ...m.extraIncome] }));
