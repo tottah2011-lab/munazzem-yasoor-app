@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const {
     income, totalIncome, extrasTotal, urgent, dailyExpenses, currentMonth, rewardClaimed,
-    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan,
+    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan, incomeSources, toggleIncomeReceived,
   } = useStore();
 
   const alinmaPaid = alinmaSavings.payments.reduce((s, p) => s + p.amount, 0);
