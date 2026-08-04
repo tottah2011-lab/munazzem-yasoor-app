@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, monthLabel, useStore } from "@/lib/store";
+import { formatSAR, isThisWeek, monthLabel, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -94,6 +94,16 @@ function Dashboard() {
       { label: "صرف عشوائي", emoji: "🎲", pct: pctOf(totals.randomTotal, Math.max(totals.emergencyTotal, 1)), color: "var(--chart-3)" },
     ];
   }, [urgent, monthlyPlan, totals, alinmaPaid, alinmaSavings.total, extrasTotal, totalIncome]);
+
+  const weekly = useMemo(() => {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const weeksLeft = Math.max(1, Math.ceil((daysInMonth - now.getDate() + 1) / 7));
+    const allowance = Math.max(0, Math.round(totals.remaining / weeksLeft));
+    const spent = dailyExpenses.filter((d) => isThisWeek(d.date)).reduce((s, d) => s + d.amount, 0);
+    const pct = Math.min(100, Math.round((spent / Math.max(allowance, 1)) * 100));
+    return { allowance, spent, pct, weeksLeft, over: spent > allowance };
+  }, [totals.remaining, dailyExpenses]);
 
 
 
