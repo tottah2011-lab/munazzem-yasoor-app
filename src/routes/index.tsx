@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PartyPopper, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, isThisWeek, monthLabel, useStore } from "@/lib/store";
 
@@ -199,6 +199,37 @@ function Dashboard() {
         </div>
         <ArrowLeft className="h-4 w-4 shrink-0" />
       </Link>
+
+      {/* 🎉 أقساط مكتملة */}
+      {doneInstallments.length > 0 && (
+        <div className="relative mt-4 overflow-hidden rounded-3xl gradient-primary p-5 text-primary-foreground shadow-elegant">
+          <div className="absolute -top-8 -right-6 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+          <div className="absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="flex items-center gap-2">
+            <PartyPopper className="h-5 w-5" />
+            <p className="text-sm font-black">مبروك! قفلتِ قسط كامل 🎉</p>
+          </div>
+          <p className="mt-1 text-xs opacity-90">
+            خلّصتِ {doneInstallments.length} قسط بالكامل — التزامك يستاهل احتفال 💗
+          </p>
+          <div className="mt-3 space-y-2">
+            {doneInstallments.map((x) => (
+              <div key={x.id} className="flex items-center justify-between rounded-2xl bg-white/15 px-3 py-2 text-xs">
+                <div className="min-w-0">
+                  <p className="truncate font-bold">{x.name}</p>
+                  <p className="opacity-90">
+                    {x.installment!.monthsTotal} شهر × {formatSAR(x.amount)}
+                  </p>
+                </div>
+                <div className="shrink-0 text-left">
+                  <p className="font-black">{formatSAR(x.amount * x.installment!.monthsTotal)}</p>
+                  <p className="opacity-90">مسدّد بالكامل ✅</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stat grid */}
       <div className="mt-4 grid grid-cols-2 gap-3">
