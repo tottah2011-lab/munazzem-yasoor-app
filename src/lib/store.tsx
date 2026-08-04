@@ -486,8 +486,10 @@ function defaultState(): State {
 function normalizeMonth(m: Partial<MonthData> | undefined): MonthData {
   const base = emptyMonth();
   if (!m) return base;
+  const incomeSources = (m.incomeSources ?? base.incomeSources).map((x) => ({ ...x }));
   return {
-    income: m.income ?? base.income,
+    income: incomeSources.reduce((s, x) => s + x.amount, 0),
+    incomeSources,
     extraIncome: (m.extraIncome ?? []).map((x) => ({ ...x })),
     urgent: m.urgent ?? [],
     postponable: m.postponable ?? [],
