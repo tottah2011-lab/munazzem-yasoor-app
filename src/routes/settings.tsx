@@ -45,28 +45,66 @@ function SettingsPage() {
 
   return (
     <AppShell title="الإعدادات">
-      <SectionTitle>الدخل الشهري</SectionTitle>
+      <SectionTitle>مصادر دخلي الشهري 💰</SectionTitle>
       <Card>
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/15 text-primary">
             <Wallet className="h-5 w-5" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-muted-foreground">الحالي</p>
+            <p className="text-xs text-muted-foreground">إجمالي الدخل الشهري</p>
             <p className="text-lg font-bold">{formatSAR(income)}</p>
           </div>
         </div>
-        <div className="mt-4 flex items-end gap-2">
-          <div className="flex-1">
-            <Input label="تعديل الدخل" value={val} onChange={setVal} type="number" />
-          </div>
-          <button
-            onClick={() => setIncome(Number(val) || 0)}
-            className="rounded-full gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-          >
-            حفظ
-          </button>
+
+        <div className="mt-4 space-y-3">
+          {incomeSources.map((s) => (
+            <div key={s.id} className="rounded-2xl border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{s.emoji ?? "💵"}</span>
+                <input
+                  value={s.name}
+                  onChange={(e) => updateIncomeSource(s.id, { name: e.target.value })}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none"
+                />
+                <button onClick={() => removeIncomeSource(s.id)} className="rounded-full p-1.5 text-muted-foreground">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <label className="rounded-xl bg-card px-3 py-2 text-[11px] text-muted-foreground">
+                  المبلغ
+                  <input
+                    type="number"
+                    value={s.amount}
+                    onChange={(e) => updateIncomeSource(s.id, { amount: Math.max(0, Number(e.target.value) || 0) })}
+                    className="w-full bg-transparent text-sm font-bold text-foreground outline-none"
+                  />
+                </label>
+                <label className="rounded-xl bg-card px-3 py-2 text-[11px] text-muted-foreground">
+                  يوم النزول (ميلادي)
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={s.day}
+                    onChange={(e) =>
+                      updateIncomeSource(s.id, { day: Math.min(31, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                    className="w-full bg-transparent text-sm font-bold text-foreground outline-none"
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
         </div>
+
+        <button
+          onClick={() => addIncomeSource({ name: "مصدر دخل جديد", amount: 0, day: 1, emoji: "💵", received: false })}
+          className="mt-3 w-full rounded-full gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+        >
+          + إضافة مصدر دخل
+        </button>
       </Card>
 
       <SectionTitle>النسخ الاحتياطي</SectionTitle>
