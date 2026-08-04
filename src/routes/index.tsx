@@ -105,6 +105,28 @@ function Dashboard() {
     return { allowance, spent, pct, weeksLeft, over: spent > allowance };
   }, [totals.remaining, dailyExpenses]);
 
+  const doneInstallments = useMemo(
+    () =>
+      urgent.filter(
+        (x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid >= x.installment.monthsTotal,
+      ),
+    [urgent],
+  );
+
+  // 🎀 بطاقة اليوم — تتبدّل كل يوم بشكل تلقائي
+  const dailyCard = useMemo(() => {
+    const cards = [
+      { emoji: "🌷", title: "همسة اليوم", text: "كل ريال توفّرينه اليوم هو راحة بال بكرة." },
+      { emoji: "🫧", title: "تحدي اليوم", text: "جربي يوم بدون أي صرف عشوائي — تقدرين!" },
+      { emoji: "🌙", title: "تذكير حلو", text: "الميزانية مو حرمان… هي اختيار للي يستاهل." },
+      { emoji: "🍰", title: "دلال بحساب", text: "خصّصي مبلغ صغير لدلعك، وخليه مخطط له." },
+      { emoji: "🦋", title: "خطوة صغيرة", text: "راجعي خطة الإنفاق دقيقة وحدة بس — يفرق." },
+      { emoji: "💎", title: "قيمة", text: "اسألي نفسك: بأحتاجه بعد أسبوع؟ إذا لا، أجّليه." },
+      { emoji: "🎠", title: "فرح", text: "احتفلي بأي التزام سددتيه، مهما كان صغير 💗" },
+    ];
+    const idx = Math.floor(Date.now() / 86400000) % cards.length;
+    return cards[idx];
+  }, []);
 
 
   return (
