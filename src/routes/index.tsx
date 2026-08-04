@@ -318,6 +318,24 @@ function Dashboard() {
         ))}
       </div>
 
+      {/* 🎀 بطاقة اليوم — مفاجأة تتبدّل كل يوم */}
+      <SectionTitle>بطاقة اليوم 🎀</SectionTitle>
+      <div className="group relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 p-5">
+        <span className="pointer-events-none absolute -top-6 -left-4 select-none text-6xl opacity-15 transition-transform duration-500 group-hover:rotate-12">
+          {dailyCard.emoji}
+        </span>
+        <div className="relative flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-card/70 text-xl shadow-soft">
+            {dailyCard.emoji}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-black text-primary">{dailyCard.title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{dailyCard.text}</p>
+          </div>
+        </div>
+      </div>
+
+
       <p className={`mt-6 text-center text-xs ${remainingTone}`}>
         الرصيد المتوقع حتى نهاية الشهر: <span className="font-bold">{formatSAR(totals.remaining)}</span>
       </p>
