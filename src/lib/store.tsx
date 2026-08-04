@@ -175,8 +175,25 @@ export type SurplusEntry = {
 };
 
 
+export type IncomeSource = {
+  id: string;
+  name: string;
+  amount: number;
+  day: number; // يوم النزول بالميلادي
+  emoji?: string;
+  received?: boolean;
+};
+
+export function defaultIncomeSources(): IncomeSource[] {
+  return [
+    { id: uid(), name: "الضمان الاجتماعي", amount: 1479, day: 1, emoji: "🏛️", received: false },
+    { id: uid(), name: "حساب المواطن", amount: 720, day: 10, emoji: "🇸🇦", received: false },
+  ];
+}
+
 export type MonthData = {
   income: number;
+  incomeSources: IncomeSource[];
   extraIncome: ExtraIncome[];
   urgent: UrgentExpense[];
   postponable: PostponableExpense[];
