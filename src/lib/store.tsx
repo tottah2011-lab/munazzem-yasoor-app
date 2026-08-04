@@ -175,8 +175,25 @@ export type SurplusEntry = {
 };
 
 
+export type IncomeSource = {
+  id: string;
+  name: string;
+  amount: number;
+  day: number; // يوم النزول بالميلادي
+  emoji?: string;
+  received?: boolean;
+};
+
+export function defaultIncomeSources(): IncomeSource[] {
+  return [
+    { id: uid(), name: "الضمان الاجتماعي", amount: 1479, day: 1, emoji: "🏛️", received: false },
+    { id: uid(), name: "حساب المواطن", amount: 720, day: 10, emoji: "🇸🇦", received: false },
+  ];
+}
+
 export type MonthData = {
   income: number;
+  incomeSources: IncomeSource[];
   extraIncome: ExtraIncome[];
   urgent: UrgentExpense[];
   postponable: PostponableExpense[];
@@ -223,6 +240,10 @@ type Ctx = MonthData & {
   goNextMonth: () => void;
 
   setIncome: (n: number) => void;
+  addIncomeSource: (s: Omit<IncomeSource, "id">) => void;
+  updateIncomeSource: (id: string, patch: Partial<IncomeSource>) => void;
+  removeIncomeSource: (id: string) => void;
+  toggleIncomeReceived: (id: string) => void;
   addExtraIncome: (e: Omit<ExtraIncome, "id">) => void;
   removeExtraIncome: (id: string) => void;
 
@@ -404,9 +425,11 @@ const defaultWellness: WellnessState = {
 };
 
 
-function emptyMonth(income = 2000): MonthData {
+function emptyMonth(income?: number): MonthData {
+  const incomeSources = defaultIncomeSources();
   return {
-    income,
+    income: income ?? incomeSources.reduce((s, x) => s + x.amount, 0),
+    incomeSources,
     extraIncome: [],
     urgent: [],
     postponable: [],
@@ -418,8 +441,10 @@ function emptyMonth(income = 2000): MonthData {
 }
 
 function seedMonth(): MonthData {
+  const incomeSources = defaultIncomeSources();
   return {
-    income: 2000,
+    income: incomeSources.reduce((s, x) => s + x.amount, 0),
+    incomeSources,
     extraIncome: [],
     urgent: [
       { id: uid(), name: "الإيجار", amount: 800, dueDate: "", paid: false, category: "سكن" },
@@ -465,8 +490,10 @@ function defaultState(): State {
 function normalizeMonth(m: Partial<MonthData> | undefined): MonthData {
   const base = emptyMonth();
   if (!m) return base;
+  const incomeSources = (m.incomeSources ?? base.incomeSources).map((x) => ({ ...x }));
   return {
-    income: m.income ?? base.income,
+    income: incomeSources.reduce((s, x) => s + x.amount, 0),
+    incomeSources,
     extraIncome: (m.extraIncome ?? []).map((x) => ({ ...x })),
     urgent: m.urgent ?? [],
     postponable: m.postponable ?? [],
@@ -717,6 +744,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
 
       setIncome: (n) => patchMonth({ income: Math.max(0, n) }),
+
+      addIncomeSource: (s) =>
+        patchMonth((m) => {
+          const incomeSources = [...m.incomeSources, { ...s, id: uid() }];
+          return { incomeSources, income: incomeSources.reduce((a, b) => a + b.amount, 0) };
+        }),
+      updateIncomeSource: (id, patch) =>
+        patchMonth((m) => {
+          const incomeSources = m.incomeSources.map((x) => (x.id === id ? { ...x, ...patch } : x));
+          return { incomeSources, income: incomeSources.reduce((a, b) => a + b.amount, 0) };
+        }),
+      removeIncomeSource: (id) =>
+        patchMonth((m) => {
+          const incomeSources = m.incomeSources.filter((x) => x.id !== id);
+          return { incomeSources, income: incomeSources.reduce((a, b) => a + b.amount, 0) };
+        }),
+      toggleIncomeReceived: (id) =>
+        patchMonth((m) => {
+          const item = m.incomeSources.find((x) => x.id === id);
+          if (item && !item.received) toast.success("نزل رصيدك! 💰", { description: `${item.name} — ${item.amount} ر.س` });
+          return { incomeSources: m.incomeSources.map((x) => (x.id === id ? { ...x, received: !x.received } : x)) };
+        }),
+
 
       addExtraIncome: (e) => {
         toast.success("رصيد جديد أضيف! 💰", { description: `${e.source} — ${e.amount} ر.س` });

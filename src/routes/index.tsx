@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const {
     income, totalIncome, extrasTotal, urgent, dailyExpenses, currentMonth, rewardClaimed,
-    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan,
+    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan, incomeSources, toggleIncomeReceived,
   } = useStore();
 
   const alinmaPaid = alinmaSavings.payments.reduce((s, p) => s + p.amount, 0);
@@ -162,6 +162,40 @@ function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {/* مصادر الدخل ومواعيد نزولها */}
+      <SectionTitle>دخلي هالشهر 💵</SectionTitle>
+      <div className="grid grid-cols-2 gap-3">
+        {incomeSources.map((s) => {
+          const today = new Date().getDate();
+          const arrived = s.received || today >= s.day;
+          return (
+            <button
+              key={s.id}
+              onClick={() => toggleIncomeReceived(s.id)}
+              className={`glass rounded-3xl p-4 text-right transition hover:scale-[1.02] ${
+                s.received ? "bg-gradient-to-br from-success/20 to-success/5" : "bg-gradient-to-br from-primary/15 to-primary/5"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xl">{s.emoji ?? "💵"}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    s.received ? "bg-success/20 text-success" : arrived ? "bg-warning/20 text-warning" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {s.received ? "استلمته ✅" : arrived ? "موعده عدّى" : `يوم ${s.day}`}
+                </span>
+              </div>
+              <p className="mt-2 truncate text-[11px] text-muted-foreground">{s.name}</p>
+              <p className="text-lg font-bold">{formatSAR(s.amount)}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">ينزل {s.day} من كل شهر ميلادي</p>
+            </button>
+          );
+        })}
+      </div>
+
+
 
       {/* موعد السداد الثابت */}
       <Card
