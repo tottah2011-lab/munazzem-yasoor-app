@@ -240,6 +240,10 @@ type Ctx = MonthData & {
   goNextMonth: () => void;
 
   setIncome: (n: number) => void;
+  addIncomeSource: (s: Omit<IncomeSource, "id">) => void;
+  updateIncomeSource: (id: string, patch: Partial<IncomeSource>) => void;
+  removeIncomeSource: (id: string) => void;
+  toggleIncomeReceived: (id: string) => void;
   addExtraIncome: (e: Omit<ExtraIncome, "id">) => void;
   removeExtraIncome: (id: string) => void;
 
