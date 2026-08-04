@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Download, Upload, Wallet } from "lucide-react";
+import { Download, Trash2, Upload, Wallet } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, useStore } from "@/lib/store";
-import { Input } from "./urgent";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -18,8 +16,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const { income, setIncome } = useStore();
-  const [val, setVal] = useState(String(income));
+  const { income, incomeSources, addIncomeSource, updateIncomeSource, removeIncomeSource } = useStore();
 
   const exportData = () => {
     const data = localStorage.getItem("monazem-masareefi-v2") ?? "{}";
