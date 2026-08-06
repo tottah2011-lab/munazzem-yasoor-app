@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Compass, Gift, PartyPopper, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarClock, CalendarX2, Gift, PartyPopper, PiggyBank, Sparkles, Wallet, Zap } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, isThisWeek, monthLabel, useStore } from "@/lib/store";
+import { formatSAR, freqTarget, isDoneToday, isThisWeek, monthLabel, useStore, type WellnessItem } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const {
     income, totalIncome, extrasTotal, urgent, dailyExpenses, currentMonth, rewardClaimed,
-    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan, incomeSources, toggleIncomeReceived,
+    isLate, daysLate, paymentDueDate, alinmaSavings, monthlyPlan, incomeSources, toggleIncomeReceived, wellness,
   } = useStore();
 
   const alinmaPaid = alinmaSavings.payments.reduce((s, p) => s + p.amount, 0);
@@ -128,6 +128,60 @@ function Dashboard() {
     return cards[idx];
   }, []);
 
+  // 🌸 التزام العناية: اليوم + تقييم آخر 3 شهور
+  const care = useMemo(() => {
+    const lists = Object.values(wellness).filter(Array.isArray) as WellnessItem[][];
+    const items = lists.flat().filter((i) => i && typeof i.label === "string");
+    const todayTotal = items.length;
+    const todayDone = items.filter(isDoneToday).length;
+    const todayPct = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
+
+    const now = new Date();
+    const months = [2, 1, 0].map((back) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const elapsedDays = back === 0 ? now.getDate() : daysInMonth;
+      let expected = 0;
+      let actual = 0;
+      for (const i of items) {
+        const freq = i.freq ?? "daily";
+        const weeks = Math.max(1, Math.ceil(elapsedDays / 7));
+        expected += freq === "daily" ? elapsedDays : freqTarget(freq) * weeks;
+        actual += (i.doneDates ?? []).filter((x) => x.startsWith(key)).length;
+      }
+      const pct = expected > 0 ? Math.min(100, Math.round((actual / expected) * 100)) : 0;
+      const rating = pct >= 80 ? "ممتاز 🌟" : pct >= 55 ? "حلو 💗" : pct >= 30 ? "متوسط 🌷" : "يحتاج جهد 🫧";
+      return { key, label: monthLabel(key), pct, rating };
+    });
+
+    return { todayDone, todayTotal, todayPct, months };
+  }, [wellness]);
+
+  // 💜 كل مصاريف الشهر (اسم + تاريخ + مبلغ)
+  const monthExpenses = useMemo(() => {
+    const rows = [
+      ...urgent.map((u) => ({
+        id: u.id,
+        name: u.name,
+        date: u.dueDate,
+        amount: u.amount,
+        kind: u.installment && u.installment.monthsTotal > 0 ? "تقسيط" : "التزام",
+      })),
+      ...dailyExpenses.map((d) => ({
+        id: d.id,
+        name: d.name,
+        date: d.date,
+        amount: d.amount,
+        kind: d.mistake ? "صرف عشوائي" : "صرف طارئ",
+      })),
+    ].sort((a, b) => (a.date < b.date ? 1 : -1));
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    return { rows, total, over: total > totalIncome };
+  }, [urgent, dailyExpenses, totalIncome]);
+
+
+
 
   return (
     <AppShell title={`أهلًا 💖 — ${monthLabel(currentMonth)}`} subtitle={`إجمالي دخلك ${formatSAR(totalIncome)}`}>
@@ -220,19 +274,37 @@ function Dashboard() {
         </div>
       </Card>
 
-      <Link
-        to="/guide"
-        className="mt-4 flex items-center gap-3 rounded-3xl gradient-info p-4 text-primary-foreground shadow-soft transition hover:scale-[1.01]"
-      >
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20">
-          <Compass className="h-5 w-5" />
+      {/* 🌸 عنايتي — كل يوم بيومه */}
+      <SectionTitle>عنايتي 🌸</SectionTitle>
+      <Link to="/wellness" className="block rounded-3xl border border-accent/30 bg-gradient-to-br from-accent/15 via-primary/10 to-secondary/10 p-4 transition hover:scale-[1.01]">
+        <div className="flex items-center gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-card/70 text-xl shadow-soft">🌸</div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black">عنايتي اليوم</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              خلّصتِ {care.todayDone} من {care.todayTotal} مهمة اليوم — {care.todayPct}%
+            </p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${care.todayPct}%` }} />
+            </div>
+          </div>
+          <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">وش أسوي بفلوسي؟ 🧭</p>
-          <p className="mt-0.5 text-xs opacity-90">دليل بسيط يوجّهك خطوة بخطوة لإدارة مصاريفك</p>
+
+        <div className="mt-4 rounded-2xl bg-card/60 p-3">
+          <p className="text-[11px] font-bold text-muted-foreground">تقييم الشهور ونسبة الالتزام 📊</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {care.months.map((m) => (
+              <div key={m.key} className="rounded-2xl bg-muted/50 p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                <p className="mt-0.5 text-lg font-black">{m.pct}%</p>
+                <p className="text-[10px]">{m.rating}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <ArrowLeft className="h-4 w-4 shrink-0" />
       </Link>
+
 
       {/* 🎉 أقساط مكتملة */}
       {doneInstallments.length > 0 && (
@@ -271,6 +343,52 @@ function Dashboard() {
         <StatCard label="التزامات شهرية" value={formatSAR(totals.commitmentsTotal)} icon={Wallet} to="/expenses" tone="from-primary/20 to-primary/5" />
         <StatCard label="صرف طارئ" value={formatSAR(totals.emergencyTotal)} icon={Zap} to="/expenses" tone="from-warning/20 to-warning/5" />
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
+      </div>
+
+      {/* 💜 كل مصاريف الشهر */}
+      <SectionTitle>كل مصاريف الشهر 🧾</SectionTitle>
+      <div
+        className={`rounded-3xl border p-4 ${
+          monthExpenses.over
+            ? "border-destructive/40 bg-destructive/10"
+            : "border-info/30 bg-gradient-to-br from-info/15 via-secondary/10 to-accent/10"
+        }`}
+      >
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">إجمالي مصاريف {monthLabel(currentMonth)}</p>
+            <p className={`text-3xl font-black ${monthExpenses.over ? "text-destructive" : "text-info"}`}>
+              {formatSAR(monthExpenses.total)}
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+              monthExpenses.over ? "bg-destructive/20 text-destructive" : "bg-info/20 text-info"
+            }`}
+          >
+            {monthExpenses.over ? "تجاوزتِ الدخل ⚠️" : "ضمن الدخل ✅"}
+          </span>
+        </div>
+
+        {monthExpenses.rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">ما سجّلتِ أي مصروف هالشهر ✨</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {monthExpenses.rows.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-2 rounded-2xl bg-card/70 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{r.name}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    {r.date || "بدون تاريخ"} • {r.kind}
+                  </p>
+                </div>
+                <p className={`shrink-0 text-sm font-black ${monthExpenses.over ? "text-destructive" : ""}`}>
+                  {formatSAR(r.amount)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <SectionTitle>مصروف الأسبوع 🗓️</SectionTitle>

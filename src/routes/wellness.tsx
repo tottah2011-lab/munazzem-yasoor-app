@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Pill, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { useStore, isThisWeek, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq, type JournalEntry } from "@/lib/store";
+import { useStore, isThisWeek, isDoneToday, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq, type JournalEntry } from "@/lib/store";
 
 export const Route = createFileRoute("/wellness")({
   head: () => ({
@@ -303,7 +303,7 @@ function ChecklistSection({
   onUndo?: (list: WellnessListKey, id: string) => void;
   showDates?: boolean;
 }) {
-  const done = items.filter((i) => i.done).length;
+  const done = items.filter(isDoneToday).length;
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -351,6 +351,7 @@ function ChecklistSection({
           const freq: WellnessFreq = i.freq ?? "daily";
           const target = freqTarget(freq);
           const weekCount = (i.doneDates ?? []).filter(isThisWeek).length;
+          const doneToday = isDoneToday(i);
           const weekly = allowFreq && freq !== "daily";
           return (
             <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
@@ -358,10 +359,10 @@ function ChecklistSection({
                 onClick={() => !editMode && onToggle(listKey, i.id)}
                 disabled={editMode}
                 className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
-                  i.done ? "border-success bg-success text-success-foreground" : "border-border"
+                  doneToday ? "border-success bg-success text-success-foreground" : "border-border"
                 }`}
               >
-                {i.done && "✓"}
+                {doneToday && "✓"}
               </button>
               {isEditing ? (
                 <input
@@ -373,7 +374,7 @@ function ChecklistSection({
                 />
               ) : (
                 <div className="min-w-0 flex-1">
-                  <span className={`block truncate text-sm ${i.done ? "text-muted-foreground line-through" : ""}`}>
+                  <span className={`block truncate text-sm ${doneToday ? "text-muted-foreground line-through" : ""}`}>
                     {i.label}
                   </span>
                   {allowFreq && (
