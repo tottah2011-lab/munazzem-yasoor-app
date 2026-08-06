@@ -63,6 +63,19 @@ export function isThisWeek(date: string) {
 
 export const freqTarget = (f?: WellnessFreq) => (f === "twice" ? 2 : 1);
 
+/** تاريخ اليوم YYYY-MM-DD */
+export function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** هل أُنجز العنصر اليوم (اليومية كل يوم بيومه) أو أُكمل هدفه الأسبوعي */
+export function isDoneToday(i: WellnessItem) {
+  const f = i.freq ?? "daily";
+  const dates = i.doneDates ?? [];
+  if (f === "daily") return dates.includes(todayKey());
+  return dates.filter(isThisWeek).length >= freqTarget(f);
+}
+
 export type WellnessListKey =
   | "meals"
   | "skinCare"
