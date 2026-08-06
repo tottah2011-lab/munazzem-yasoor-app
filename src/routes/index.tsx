@@ -220,19 +220,37 @@ function Dashboard() {
         </div>
       </Card>
 
-      <Link
-        to="/guide"
-        className="mt-4 flex items-center gap-3 rounded-3xl gradient-info p-4 text-primary-foreground shadow-soft transition hover:scale-[1.01]"
-      >
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20">
-          <Compass className="h-5 w-5" />
+      {/* 🌸 عنايتي — كل يوم بيومه */}
+      <SectionTitle>عنايتي 🌸</SectionTitle>
+      <Link to="/wellness" className="block rounded-3xl border border-accent/30 bg-gradient-to-br from-accent/15 via-primary/10 to-secondary/10 p-4 transition hover:scale-[1.01]">
+        <div className="flex items-center gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-card/70 text-xl shadow-soft">🌸</div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black">عنايتي اليوم</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              خلّصتِ {care.todayDone} من {care.todayTotal} مهمة اليوم — {care.todayPct}%
+            </p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${care.todayPct}%` }} />
+            </div>
+          </div>
+          <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">وش أسوي بفلوسي؟ 🧭</p>
-          <p className="mt-0.5 text-xs opacity-90">دليل بسيط يوجّهك خطوة بخطوة لإدارة مصاريفك</p>
+
+        <div className="mt-4 rounded-2xl bg-card/60 p-3">
+          <p className="text-[11px] font-bold text-muted-foreground">تقييم الشهور ونسبة الالتزام 📊</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {care.months.map((m) => (
+              <div key={m.key} className="rounded-2xl bg-muted/50 p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                <p className="mt-0.5 text-lg font-black">{m.pct}%</p>
+                <p className="text-[10px]">{m.rating}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <ArrowLeft className="h-4 w-4 shrink-0" />
       </Link>
+
 
       {/* 🎉 أقساط مكتملة */}
       {doneInstallments.length > 0 && (
