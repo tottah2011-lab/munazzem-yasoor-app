@@ -862,10 +862,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
-              if (freq === "daily") return { ...x, done: !x.done };
               const today = new Date().toISOString().slice(0, 10);
               const dates = x.doneDates ?? [];
               const next = dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today];
+              if (freq === "daily") return { ...x, doneDates: next, done: next.includes(today) };
               const count = next.filter(isThisWeek).length;
               return { ...x, doneDates: next, done: count >= freqTarget(freq) };
             }),
