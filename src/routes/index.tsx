@@ -128,6 +128,60 @@ function Dashboard() {
     return cards[idx];
   }, []);
 
+  // 🌸 التزام العناية: اليوم + تقييم آخر 3 شهور
+  const care = useMemo(() => {
+    const lists = Object.values(wellness).filter(Array.isArray) as WellnessItem[][];
+    const items = lists.flat().filter((i) => i && typeof i.label === "string");
+    const todayTotal = items.length;
+    const todayDone = items.filter(isDoneToday).length;
+    const todayPct = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
+
+    const now = new Date();
+    const months = [2, 1, 0].map((back) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const elapsedDays = back === 0 ? now.getDate() : daysInMonth;
+      let expected = 0;
+      let actual = 0;
+      for (const i of items) {
+        const freq = i.freq ?? "daily";
+        const weeks = Math.max(1, Math.ceil(elapsedDays / 7));
+        expected += freq === "daily" ? elapsedDays : freqTarget(freq) * weeks;
+        actual += (i.doneDates ?? []).filter((x) => x.startsWith(key)).length;
+      }
+      const pct = expected > 0 ? Math.min(100, Math.round((actual / expected) * 100)) : 0;
+      const rating = pct >= 80 ? "ممتاز 🌟" : pct >= 55 ? "حلو 💗" : pct >= 30 ? "متوسط 🌷" : "يحتاج جهد 🫧";
+      return { key, label: monthLabel(key), pct, rating };
+    });
+
+    return { todayDone, todayTotal, todayPct, months };
+  }, [wellness]);
+
+  // 💜 كل مصاريف الشهر (اسم + تاريخ + مبلغ)
+  const monthExpenses = useMemo(() => {
+    const rows = [
+      ...urgent.map((u) => ({
+        id: u.id,
+        name: u.name,
+        date: u.dueDate,
+        amount: u.amount,
+        kind: u.installment && u.installment.monthsTotal > 0 ? "تقسيط" : "التزام",
+      })),
+      ...dailyExpenses.map((d) => ({
+        id: d.id,
+        name: d.name,
+        date: d.date,
+        amount: d.amount,
+        kind: d.mistake ? "صرف عشوائي" : "صرف طارئ",
+      })),
+    ].sort((a, b) => (a.date < b.date ? 1 : -1));
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    return { rows, total, over: total > totalIncome };
+  }, [urgent, dailyExpenses, totalIncome]);
+
+
+
 
   return (
     <AppShell title={`أهلًا 💖 — ${monthLabel(currentMonth)}`} subtitle={`إجمالي دخلك ${formatSAR(totalIncome)}`}>
