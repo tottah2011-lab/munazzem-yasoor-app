@@ -390,6 +390,7 @@ export function shiftMonth(key: string, delta: number) {
 
 const defaultWellness: WellnessState = {
   journal: [],
+  dailyLogs: {},
   calorieTarget: 2000,
   waterCups: 0,
   waterGoal: 8,
@@ -405,20 +406,28 @@ const defaultWellness: WellnessState = {
     { id: "s1", label: "غسول الوجه", done: false, freq: "daily", doneDates: [] },
     { id: "s3", label: "مرطب", done: false, freq: "daily", doneDates: [] },
     { id: "s4", label: "واقي شمس", done: false, freq: "daily", doneDates: [] },
-    { id: "s5", label: "تقشير البشرة", done: false, freq: "twice", doneDates: [] },
-    { id: "s6", label: "ماسك الوجه", done: false, freq: "weekly", doneDates: [] },
   ],
   hairCare: [
     { id: "h1", label: "تمشيط الشعر", done: false, freq: "daily", doneDates: [] },
-    { id: "h2", label: "زيت الشعر", done: false, freq: "twice", doneDates: [] },
-    { id: "h3", label: "ماسك أسبوعي", done: false, freq: "weekly", doneDates: [] },
-    { id: "h4", label: "غسل الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "h5", label: "سيروم الشعر", done: false, freq: "daily", doneDates: [] },
   ],
-  habits: [
-    { id: "hb1", label: "قراءة 10 دقائق", done: false },
-    { id: "hb2", label: "تأمل", done: false },
-    { id: "hb3", label: "المشي", done: false },
+  skinWeekly: [
+    { id: "sw1", label: "تقشير البشرة", done: false, freq: "twice", doneDates: [] },
+    { id: "sw2", label: "ماسك الوجه", done: false, freq: "twice", doneDates: [] },
   ],
+  hairWeekly: [
+    { id: "hw1", label: "زيت الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "hw2", label: "غسل الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "hw3", label: "ماسك الشعر", done: false, freq: "twice", doneDates: [] },
+  ],
+  worship: [
+    { id: "wp1", label: "الصلوات الخمس 🕌", done: false, freq: "daily", doneDates: [] },
+    { id: "wp2", label: "ورد القرآن 📖", done: false, freq: "daily", doneDates: [] },
+    { id: "wp3", label: "أذكار الصباح والمساء 🤲", done: false, freq: "daily", doneDates: [] },
+    { id: "wp4", label: "قيام / نافلة 🌙", done: false, freq: "daily", doneDates: [] },
+  ],
+  habits: [],
+
   selfDev: [
     { id: "sd1", label: "قراءة كتاب تطويري", done: false },
     { id: "sd2", label: "كورس / درس جديد", done: false },
