@@ -1,16 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Activity, Award, Check, Droplets, Dumbbell, Footprints, HeartPulse, Laptop, Minus, Moon, Pencil, Plus, Pill, Smile, Sparkles, Trash2, Utensils, Weight, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Award, Check, ChevronLeft, ChevronRight, Droplets, Dumbbell, Flame, Footprints, HeartPulse,
+  Laptop, Minus, Moon, Pencil, Plus, Pill, Smile, Sparkles, Trash2, Weight, X,
+} from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { useStore, isThisWeek, isDoneToday, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq, type JournalEntry } from "@/lib/store";
+import {
+  useStore, freqTarget, type WellnessListKey, type WellnessItem, type WellnessFreq, type JournalEntry,
+  type DailyMetrics,
+} from "@/lib/store";
 
 export const Route = createFileRoute("/wellness")({
   head: () => ({
     meta: [
-      { title: "العناية وتطوير الذات — منظم مصاريفي" },
-      { name: "description", content: "دايت، عناية، تطوير ذات، عملك الإلكتروني، وإنجازاتك." },
-      { property: "og:title", content: "العناية وتطوير الذات 💖" },
-      { property: "og:description", content: "اهتمي بنفسك وطوّري ذاتك يوميًا." },
+      { title: "عنايتي اليومية — منظم مصاريفي" },
+      { name: "description", content: "قياساتك اليومية، عناية البشرة والشعر، فيتاميناتك، عبادتك وتطوير ذاتك — كل يوم بتاريخه." },
+      { property: "og:title", content: "عنايتي اليومية 🌸" },
+      { property: "og:description", content: "كل يوم بتاريخه — قياسات، عناية، عبادات وتطوير ذات." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Wellness,
@@ -23,111 +31,213 @@ const moods = [
   { key: "bad", label: "سيء", emoji: "😔" },
 ] as const;
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+const shiftDate = (d: string, delta: number) => {
+  const x = new Date(d + "T00:00:00");
+  x.setDate(x.getDate() + delta);
+  return x.toISOString().slice(0, 10);
+};
+
+const weekStartOf = (d: string) => {
+  const x = new Date(d + "T00:00:00");
+  x.setDate(x.getDate() - ((x.getDay() + 1) % 7));
+  return x.toISOString().slice(0, 10);
+};
+
+const inWeekOf = (date: string, ref: string) => date >= weekStartOf(ref) && date <= shiftDate(weekStartOf(ref), 6);
+
+const dayLabel = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+const shortDay = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "short", day: "numeric", month: "numeric" });
+
+const isDoneOn = (i: WellnessItem, date: string) => {
+  const dates = i.doneDates ?? [];
+  const f = i.freq ?? "daily";
+  if (f === "daily") return dates.includes(date);
+  return dates.filter((d) => inWeekOf(d, date)).length >= freqTarget(f);
+};
+
 function Wellness() {
-  const { wellness, setWellness, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem, setWellnessItemFreq, logWellnessSession, undoWellnessSession, saveJournalEntry, removeJournalEntry } = useStore();
+  const {
+    wellness, setDailyMetrics, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem,
+    setWellnessItemFreq, logWellnessSession, undoWellnessSession, saveJournalEntry, removeJournalEntry,
+  } = useStore();
+
+  const today = todayStr();
+  const [date, setDate] = useState(today);
+  const logs = wellness.dailyLogs ?? {};
+  const day: Partial<DailyMetrics> = logs[date] ?? {};
+
+  const set = (patch: Partial<DailyMetrics>) => setDailyMetrics(date, patch);
+
+  const trackedLists: WellnessListKey[] = ["skinCare", "hairCare", "skinWeekly", "hairWeekly", "vitamins", "onlineWork", "selfDev", "worship"];
+
+  const dayScore = useMemo(() => {
+    let total = 0, done = 0;
+    for (const k of trackedLists) {
+      for (const it of wellness[k] ?? []) {
+        total++;
+        if (isDoneOn(it, date)) done++;
+      }
+    }
+    return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
+  }, [wellness, date]);
+
+  const last7 = useMemo(() => {
+    const arr: { date: string; pct: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = shiftDate(today, -i);
+      let total = 0, done = 0;
+      for (const k of trackedLists) {
+        for (const it of wellness[k] ?? []) {
+          total++;
+          if (isDoneOn(it, d)) done++;
+        }
+      }
+      arr.push({ date: d, pct: total ? Math.round((done / total) * 100) : 0 });
+    }
+    return arr;
+  }, [wellness, today]);
+
+  const listProps = {
+    date,
+    onToggle: toggleWellnessItem,
+    onAdd: addWellnessItem,
+    onRename: renameWellnessItem,
+    onRemove: removeWellnessItem,
+  };
 
   return (
-    <AppShell title="العناية وتطوير الذات 💖" subtitle="اهتمي بنفسك وطوّري ذاتك">
-      <SectionTitle>الماء 💧</SectionTitle>
-      <Card>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-full bg-info/15 text-info">
-              <Droplets className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">أكواب اليوم</p>
-              <p className="text-2xl font-black">{wellness.waterCups} / {wellness.waterGoal}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setWellness({ waterCups: Math.max(0, wellness.waterCups - 1) })} className="grid h-10 w-10 place-items-center rounded-full bg-muted">
-              <Minus className="h-4 w-4" />
-            </button>
-            <button onClick={() => setWellness({ waterCups: wellness.waterCups + 1 })} className="grid h-10 w-10 place-items-center rounded-full gradient-info text-info-foreground">
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full gradient-info transition-all"
-            style={{ width: `${Math.min(100, (wellness.waterCups / wellness.waterGoal) * 100)}%` }}
+    <AppShell title="عنايتي 🌸" subtitle="كل يوم بتاريخه — وكل إنجازاتك بمكان واحد">
+      {/* شريط التاريخ */}
+      <Card className="flex items-center justify-between gap-2 p-3">
+        <button onClick={() => setDate(shiftDate(date, -1))} className="grid h-9 w-9 place-items-center rounded-full bg-muted" aria-label="اليوم السابق">
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-black">{date === today ? "اليوم 🌷" : dayLabel(date)}</p>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            className="mt-1 rounded-full border border-border bg-input/50 px-3 py-1 text-[11px] outline-none focus:border-primary"
           />
         </div>
+        <button
+          onClick={() => setDate(shiftDate(date, 1))}
+          disabled={date >= today}
+          className="grid h-9 w-9 place-items-center rounded-full bg-muted disabled:opacity-30"
+          aria-label="اليوم التالي"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
       </Card>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <NumberCard icon={Utensils} label="سعرات اليوم" value={wellness.calorieTarget} suffix="سعرة"
-          onChange={(v) => setWellness({ calorieTarget: v })} />
-        <NumberCard icon={Weight} label="الوزن" value={wellness.weightKg} suffix="كجم"
-          onChange={(v) => setWellness({ weightKg: v })} />
-        <NumberCard icon={Moon} label="ساعات النوم" value={wellness.sleepHours} suffix="ساعة" step={0.5}
-          onChange={(v) => setWellness({ sleepHours: v })} />
-        <NumberCard icon={Footprints} label={`الخطوات (${wellness.stepsGoal})`} value={wellness.steps} suffix="خطوة" step={500}
-          onChange={(v) => setWellness({ steps: Math.max(0, Math.round(v)) })} />
+      {/* قياسات اليوم — خانات صغيرة بسطر */}
+      <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <MiniMetric icon={Droplets} label="ماء" value={day.water ?? 0} step={1} suffix="كوب" tone="info"
+          onChange={(v) => set({ water: v })} />
+        <MiniMetric icon={Flame} label="سعرات" value={day.calories ?? 0} step={50} suffix="سعرة" tone="accent"
+          onChange={(v) => set({ calories: v })} />
+        <MiniMetric icon={Weight} label="الوزن" value={day.weight ?? wellness.weightKg} step={0.5} suffix="كجم" tone="secondary"
+          onChange={(v) => set({ weight: v })} />
+        <MiniMetric icon={Moon} label="النوم" value={day.sleep ?? 0} step={0.5} suffix="ساعة" tone="primary"
+          onChange={(v) => set({ sleep: v })} />
+        <MiniMetric icon={Footprints} label="خطوات" value={day.steps ?? 0} step={500} suffix="خطوة" tone="success"
+          onChange={(v) => set({ steps: v })} />
       </div>
 
+      {/* النتيجة المجمّعة */}
       <Card className="mt-3">
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/15 text-primary">
-            <Footprints className="h-5 w-5" />
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">نتيجة {date === today ? "اليوم" : "هاليوم"}</p>
+            <p className="text-2xl font-black text-primary">{dayScore.pct}%</p>
+            <p className="text-[11px] text-muted-foreground">{dayScore.done} من {dayScore.total} مهمة ✨</p>
           </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">تقدّم الخطوات اليوم</p>
-            <p className="text-lg font-bold">{wellness.steps} / {wellness.stepsGoal}</p>
+          <div className="grid h-16 w-16 place-items-center rounded-full"
+            style={{ background: `conic-gradient(hsl(var(--primary)) ${dayScore.pct * 3.6}deg, hsl(var(--muted)) 0deg)` }}>
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-card text-sm font-black">
+              {dayScore.pct >= 80 ? "🌟" : dayScore.pct >= 40 ? "💗" : "🌱"}
+            </div>
           </div>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full gradient-primary transition-all"
-            style={{ width: `${Math.min(100, (wellness.steps / Math.max(wellness.stepsGoal, 1)) * 100)}%` }}
-          />
+        <div className="mt-4 flex items-end justify-between gap-1.5">
+          {last7.map((d) => (
+            <button key={d.date} onClick={() => setDate(d.date)} className="flex flex-1 flex-col items-center gap-1">
+              <div className="flex h-14 w-full items-end overflow-hidden rounded-xl bg-muted/60">
+                <div className="w-full gradient-primary transition-all" style={{ height: `${Math.max(6, d.pct)}%` }} />
+              </div>
+              <span className={`text-[9px] ${d.date === date ? "font-bold text-primary" : "text-muted-foreground"}`}>
+                {new Date(d.date + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "narrow" })}
+              </span>
+            </button>
+          ))}
         </div>
+        <p className="mt-2 text-center text-[10px] text-muted-foreground">آخر ٧ أيام — اضغطي على أي يوم ترجعين له 💗</p>
       </Card>
 
-      
+      <SectionTitle>العناية اليومية 🌸</SectionTitle>
+      <ChecklistSection title="للبشرة 🧴" icon={Smile} listKey="skinCare" items={wellness.skinCare ?? []} {...listProps} />
+      <ChecklistSection title="للشعر 💇‍♀️" icon={Sparkles} listKey="hairCare" items={wellness.hairCare ?? []} {...listProps} />
+
+      <SectionTitle>العناية الأسبوعية — الاثنين والخميس 🗓️</SectionTitle>
+      <ChecklistSection title="للبشرة 🌷" icon={Smile} listKey="skinWeekly" items={wellness.skinWeekly ?? []} weekly
+        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} showDates {...listProps} />
+      <ChecklistSection title="للشعر 🪷" icon={Sparkles} listKey="hairWeekly" items={wellness.hairWeekly ?? []} weekly
+        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} showDates {...listProps} />
 
       <ChecklistSection title="فيتاميناتي 💊" icon={Pill} listKey="vitamins" items={wellness.vitamins ?? []}
-        allowFreq showDates onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+        weekly showDates onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
 
-      <ChecklistSection title="وجبات صحية 🥗" icon={Utensils} listKey="meals" items={wellness.meals}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-      <ChecklistSection title="العناية بالبشرة 🌸" icon={Smile} listKey="skinCare" items={wellness.skinCare}
-        allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-      <ChecklistSection title="العناية بالشعر 💇‍♀️" icon={Smile} listKey="hairCare" items={wellness.hairCare}
-        allowFreq onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-      <ChecklistSection
-        title="جدول تمارين المقاومة 🏋️‍♀️"
-        icon={Dumbbell} listKey="workouts" items={wellness.workouts}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="عملي الإلكتروني 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork ?? []} {...listProps} />
+      <ChecklistSection title="تطوير الذات 📚" icon={Award} listKey="selfDev" items={wellness.selfDev ?? []} {...listProps} />
+      <ChecklistSection title="العبادات 🤲" icon={HeartPulse} listKey="worship" items={wellness.worship ?? []} {...listProps} />
+      <ChecklistSection title="جدول تمارين المقاومة 🏋️‍♀️" icon={Dumbbell} listKey="workouts" items={wellness.workouts ?? []} {...listProps} />
 
-      <ChecklistSection title="عادات يومية ✨" icon={Activity} listKey="habits" items={wellness.habits}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-
-
-      <ChecklistSection title="تطوير الذات 📚" icon={Sparkles} listKey="selfDev" items={wellness.selfDev}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-      <ChecklistSection title="عملي الإلكتروني 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-      <ChecklistSection title="إنجازاتي 🏆" icon={Award} listKey="achievements" items={wellness.achievements}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
-
-      <ChecklistSection
-        title="مشاكل أبغى أحلها 💗"
-        icon={HeartPulse} listKey="concerns" items={wellness.concerns}
-        onToggle={toggleWellnessItem} onAdd={addWellnessItem} onRename={renameWellnessItem} onRemove={removeWellnessItem} />
+      <ChecklistSection title="مشاكل أبغى أحلها 💗" icon={HeartPulse} listKey="concerns" items={wellness.concerns ?? []} {...listProps} />
 
       <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
     </AppShell>
   );
 }
 
-const dayLabel = (d: string) =>
-  new Date(d + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const toneClass: Record<string, string> = {
+  info: "bg-info/15 text-info",
+  accent: "bg-accent/20 text-accent-foreground",
+  secondary: "bg-secondary/20 text-secondary-foreground",
+  primary: "bg-primary/15 text-primary",
+  success: "bg-success/15 text-success",
+};
+
+function MiniMetric({
+  icon: Icon, label, value, suffix, step, tone, onChange,
+}: {
+  icon: typeof Droplets; label: string; value: number; suffix: string; step: number; tone: string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="min-w-[92px] flex-1 rounded-2xl border border-border/60 bg-card/70 p-2 text-center shadow-soft">
+      <div className={`mx-auto grid h-7 w-7 place-items-center rounded-full ${toneClass[tone]}`}>
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <p className="mt-1 text-[10px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-black leading-tight">{value}</p>
+      <p className="text-[9px] text-muted-foreground">{suffix}</p>
+      <div className="mt-1.5 flex gap-1">
+        <button onClick={() => onChange(Math.max(0, +(value - step).toFixed(1)))} className="grid h-6 flex-1 place-items-center rounded-full bg-muted">
+          <Minus className="h-3 w-3" />
+        </button>
+        <button onClick={() => onChange(+(value + step).toFixed(1))} className="grid h-6 flex-1 place-items-center rounded-full gradient-primary text-primary-foreground">
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function JournalSection({
   entries, onSave, onRemove,
@@ -136,7 +246,7 @@ function JournalSection({
   onSave: (e: Omit<JournalEntry, "id">) => void;
   onRemove: (id: string) => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   const [date, setDate] = useState(today);
   const current = entries.find((e) => e.date === date);
   const [mood, setMood] = useState<JournalEntry["mood"]>(current?.mood ?? "good");
@@ -252,33 +362,6 @@ function JournalSection({
   );
 }
 
-const shortDay = (d: string) =>
-  new Date(d + "T00:00:00").toLocaleDateString("ar-EG", { weekday: "short", day: "numeric", month: "numeric" });
-
-function NumberCard({
-  icon: Icon, label, value, suffix, step = 1, onChange,
-}: { icon: typeof Droplets; label: string; value: number; suffix: string; step?: number; onChange: (v: number) => void }) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-center gap-2">
-        <div className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
-        </div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </div>
-      <p className="mt-3 text-xl font-black">{value} <span className="text-xs font-normal text-muted-foreground">{suffix}</span></p>
-      <div className="mt-2 flex gap-1.5">
-        <button onClick={() => onChange(Math.max(0, +(value - step).toFixed(1)))} className="grid h-8 flex-1 place-items-center rounded-full bg-muted">
-          <Minus className="h-3.5 w-3.5" />
-        </button>
-        <button onClick={() => onChange(+(value + step).toFixed(1))} className="grid h-8 flex-1 place-items-center rounded-full gradient-primary text-primary-foreground">
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </Card>
-  );
-}
-
 const freqLabels: Record<WellnessFreq, string> = {
   daily: "يومي",
   weekly: "مرة بالأسبوع",
@@ -287,28 +370,29 @@ const freqLabels: Record<WellnessFreq, string> = {
 const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
 
 function ChecklistSection({
-  title, icon: Icon, listKey, items, onToggle, onAdd, onRename, onRemove, allowFreq, onSetFreq, onLog, onUndo, showDates,
+  title, icon: Icon, listKey, items, date, onToggle, onAdd, onRename, onRemove, weekly, onSetFreq, onLog, onUndo, showDates,
 }: {
   title: string;
-  icon: typeof Utensils;
+  icon: typeof Smile;
   listKey: WellnessListKey;
   items: WellnessItem[];
-  onToggle: (list: WellnessListKey, id: string) => void;
+  date: string;
+  onToggle: (list: WellnessListKey, id: string, date?: string) => void;
   onAdd: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
   onRename: (list: WellnessListKey, id: string, label: string) => void;
   onRemove: (list: WellnessListKey, id: string) => void;
-  allowFreq?: boolean;
+  weekly?: boolean;
   onSetFreq?: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
-  onLog?: (list: WellnessListKey, id: string) => void;
-  onUndo?: (list: WellnessListKey, id: string) => void;
+  onLog?: (list: WellnessListKey, id: string, date?: string) => void;
+  onUndo?: (list: WellnessListKey, id: string, date?: string) => void;
   showDates?: boolean;
 }) {
-  const done = items.filter(isDoneToday).length;
+  const done = items.filter((i) => isDoneOn(i, date)).length;
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [newLabel, setNewLabel] = useState("");
-  const [newFreq, setNewFreq] = useState<WellnessFreq>("daily");
+  const [newFreq, setNewFreq] = useState<WellnessFreq>(weekly ? "twice" : "daily");
 
   const startEdit = (item: WellnessItem) => {
     setEditingId(item.id);
@@ -348,21 +432,21 @@ function ChecklistSection({
         )}
         {items.map((i) => {
           const isEditing = editingId === i.id;
-          const freq: WellnessFreq = i.freq ?? "daily";
+          const freq: WellnessFreq = i.freq ?? (weekly ? "twice" : "daily");
           const target = freqTarget(freq);
-          const weekCount = (i.doneDates ?? []).filter(isThisWeek).length;
-          const doneToday = isDoneToday(i);
-          const weekly = allowFreq && freq !== "daily";
+          const weekCount = (i.doneDates ?? []).filter((d) => inWeekOf(d, date)).length;
+          const doneNow = isDoneOn(i, date);
+          const isWeeklyItem = !!weekly && freq !== "daily";
           return (
             <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
               <button
-                onClick={() => !editMode && onToggle(listKey, i.id)}
+                onClick={() => !editMode && onToggle(listKey, i.id, date)}
                 disabled={editMode}
                 className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
-                  doneToday ? "border-success bg-success text-success-foreground" : "border-border"
+                  doneNow ? "border-success bg-success text-success-foreground" : "border-border"
                 }`}
               >
-                {doneToday && "✓"}
+                {doneNow && "✓"}
               </button>
               {isEditing ? (
                 <input
@@ -374,26 +458,23 @@ function ChecklistSection({
                 />
               ) : (
                 <div className="min-w-0 flex-1">
-                  <span className={`block truncate text-sm ${doneToday ? "text-muted-foreground line-through" : ""}`}>
+                  <span className={`block truncate text-sm ${doneNow ? "text-muted-foreground line-through" : ""}`}>
                     {i.label}
                   </span>
-                  {allowFreq && (
+                  {weekly && (
                     <div className="mt-1 flex items-center gap-1.5">
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         {freqLabels[freq]}
                       </span>
-                      {weekly && (
+                      {isWeeklyItem && (
                         <div className="flex gap-1">
                           {Array.from({ length: target }).map((_, k) => (
-                            <span
-                              key={k}
-                              className={`h-1.5 w-5 rounded-full ${k < weekCount ? "bg-success" : "bg-muted"}`}
-                            />
+                            <span key={k} className={`h-1.5 w-5 rounded-full ${k < weekCount ? "bg-success" : "bg-muted"}`} />
                           ))}
                         </div>
                       )}
                       <span className="text-[10px] text-muted-foreground">
-                        {weekly ? `${weekCount}/${target} هالأسبوع` : `${weekCount} جلسة هالأسبوع`}
+                        {isWeeklyItem ? `${weekCount}/${target} هالأسبوع` : `${weekCount} جلسة هالأسبوع`}
                       </span>
                     </div>
                   )}
@@ -411,11 +492,11 @@ function ChecklistSection({
                   )}
                 </div>
               )}
-              {allowFreq && onLog && !editMode && !isEditing && (
+              {weekly && onLog && !editMode && !isEditing && (
                 <div className="flex shrink-0 items-center gap-1">
                   {weekCount > 0 && onUndo && (
                     <button
-                      onClick={() => onUndo(listKey, i.id)}
+                      onClick={() => onUndo(listKey, i.id, date)}
                       className="grid h-7 w-7 place-items-center rounded-full bg-muted text-muted-foreground"
                       aria-label="تراجع عن جلسة"
                     >
@@ -423,14 +504,14 @@ function ChecklistSection({
                     </button>
                   )}
                   <button
-                    onClick={() => onLog(listKey, i.id)}
+                    onClick={() => onLog(listKey, i.id, date)}
                     className="flex h-7 items-center gap-1 rounded-full gradient-primary px-2.5 text-[10px] font-bold text-primary-foreground"
                   >
                     <Plus className="h-3 w-3" /> جلسة
                   </button>
                 </div>
               )}
-              {allowFreq && editMode && !isEditing && onSetFreq && (
+              {weekly && editMode && !isEditing && onSetFreq && (
                 <button
                   onClick={() => onSetFreq(listKey, i.id, freqOrder[(freqOrder.indexOf(freq) + 1) % freqOrder.length])}
                   className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold"
@@ -463,7 +544,7 @@ function ChecklistSection({
         })}
         {editMode && (
           <div className="space-y-2 pt-1">
-            {allowFreq && (
+            {weekly && (
               <div className="flex gap-1.5">
                 {freqOrder.map((f) => (
                   <button

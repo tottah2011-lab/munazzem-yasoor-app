@@ -80,6 +80,9 @@ export type WellnessListKey =
   | "meals"
   | "skinCare"
   | "hairCare"
+  | "skinWeekly"
+  | "hairWeekly"
+  | "worship"
   | "habits"
   | "selfDev"
   | "onlineWork"
@@ -96,8 +99,18 @@ export type JournalEntry = {
   sad: string;
 };
 
+/** قياسات اليوم — كل يوم بتاريخه */
+export type DailyMetrics = {
+  water: number;
+  calories: number;
+  weight: number;
+  sleep: number;
+  steps: number;
+};
+
 export type WellnessState = {
   journal: JournalEntry[];
+  dailyLogs: Record<string, Partial<DailyMetrics>>;
   calorieTarget: number;
   waterCups: number;
   waterGoal: number;
@@ -106,6 +119,9 @@ export type WellnessState = {
   meals: WellnessItem[];
   skinCare: WellnessItem[];
   hairCare: WellnessItem[];
+  skinWeekly: WellnessItem[];
+  hairWeekly: WellnessItem[];
+  worship: WellnessItem[];
   habits: WellnessItem[];
   selfDev: WellnessItem[];
   onlineWork: WellnessItem[];
@@ -118,6 +134,7 @@ export type WellnessState = {
   steps: number;
   stepsGoal: number;
 };
+
 
 
 export type Theme = "light" | "dark";
@@ -291,9 +308,10 @@ type Ctx = MonthData & {
   setWellness: (patch: Partial<WellnessState>) => void;
   saveJournalEntry: (e: Omit<JournalEntry, "id">) => void;
   removeJournalEntry: (id: string) => void;
-  toggleWellnessItem: (list: WellnessListKey, id: string) => void;
-  logWellnessSession: (list: WellnessListKey, id: string) => void;
-  undoWellnessSession: (list: WellnessListKey, id: string) => void;
+  toggleWellnessItem: (list: WellnessListKey, id: string, date?: string) => void;
+  logWellnessSession: (list: WellnessListKey, id: string, date?: string) => void;
+  undoWellnessSession: (list: WellnessListKey, id: string, date?: string) => void;
+  setDailyMetrics: (date: string, patch: Partial<DailyMetrics>) => void;
   addWellnessItem: (list: WellnessListKey, label: string, freq?: WellnessFreq) => void;
   setWellnessItemFreq: (list: WellnessListKey, id: string, freq: WellnessFreq) => void;
   renameWellnessItem: (list: WellnessListKey, id: string, label: string) => void;
@@ -373,6 +391,7 @@ export function shiftMonth(key: string, delta: number) {
 
 const defaultWellness: WellnessState = {
   journal: [],
+  dailyLogs: {},
   calorieTarget: 2000,
   waterCups: 0,
   waterGoal: 8,
@@ -388,20 +407,28 @@ const defaultWellness: WellnessState = {
     { id: "s1", label: "غسول الوجه", done: false, freq: "daily", doneDates: [] },
     { id: "s3", label: "مرطب", done: false, freq: "daily", doneDates: [] },
     { id: "s4", label: "واقي شمس", done: false, freq: "daily", doneDates: [] },
-    { id: "s5", label: "تقشير البشرة", done: false, freq: "twice", doneDates: [] },
-    { id: "s6", label: "ماسك الوجه", done: false, freq: "weekly", doneDates: [] },
   ],
   hairCare: [
     { id: "h1", label: "تمشيط الشعر", done: false, freq: "daily", doneDates: [] },
-    { id: "h2", label: "زيت الشعر", done: false, freq: "twice", doneDates: [] },
-    { id: "h3", label: "ماسك أسبوعي", done: false, freq: "weekly", doneDates: [] },
-    { id: "h4", label: "غسل الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "h5", label: "سيروم الشعر", done: false, freq: "daily", doneDates: [] },
   ],
-  habits: [
-    { id: "hb1", label: "قراءة 10 دقائق", done: false },
-    { id: "hb2", label: "تأمل", done: false },
-    { id: "hb3", label: "المشي", done: false },
+  skinWeekly: [
+    { id: "sw1", label: "تقشير البشرة", done: false, freq: "twice", doneDates: [] },
+    { id: "sw2", label: "ماسك الوجه", done: false, freq: "twice", doneDates: [] },
   ],
+  hairWeekly: [
+    { id: "hw1", label: "زيت الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "hw2", label: "غسل الشعر", done: false, freq: "twice", doneDates: [] },
+    { id: "hw3", label: "ماسك الشعر", done: false, freq: "twice", doneDates: [] },
+  ],
+  worship: [
+    { id: "wp1", label: "الصلوات الخمس 🕌", done: false, freq: "daily", doneDates: [] },
+    { id: "wp2", label: "ورد القرآن 📖", done: false, freq: "daily", doneDates: [] },
+    { id: "wp3", label: "أذكار الصباح والمساء 🤲", done: false, freq: "daily", doneDates: [] },
+    { id: "wp4", label: "قيام / نافلة 🌙", done: false, freq: "daily", doneDates: [] },
+  ],
+  habits: [],
+
   selfDev: [
     { id: "sd1", label: "قراءة كتاب تطويري", done: false },
     { id: "sd2", label: "كورس / درس جديد", done: false },
@@ -867,7 +894,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           wellness: { ...s.wellness, journal: (s.wellness.journal ?? []).filter((x) => x.id !== id) },
         })),
-      toggleWellnessItem: (list, id) =>
+      setDailyMetrics: (date, patch) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            dailyLogs: { ...(s.wellness.dailyLogs ?? {}), [date]: { ...((s.wellness.dailyLogs ?? {})[date] ?? {}), ...patch } },
+          },
+        })),
+      toggleWellnessItem: (list, id, date) =>
         setState((s) => ({
           ...s,
           wellness: {
@@ -875,16 +910,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
-              const today = new Date().toISOString().slice(0, 10);
+              const day = date ?? todayKey();
               const dates = x.doneDates ?? [];
-              const next = dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today];
-              if (freq === "daily") return { ...x, doneDates: next, done: next.includes(today) };
+              const next = dates.includes(day) ? dates.filter((d) => d !== day) : [...dates, day];
+              if (freq === "daily") return { ...x, doneDates: next, done: next.includes(todayKey()) };
               const count = next.filter(isThisWeek).length;
               return { ...x, doneDates: next, done: count >= freqTarget(freq) };
             }),
           },
         })),
-      logWellnessSession: (list, id) =>
+      logWellnessSession: (list, id, date) =>
         setState((s) => ({
           ...s,
           wellness: {
@@ -892,14 +927,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
-              const today = new Date().toISOString().slice(0, 10);
-              const next = [...(x.doneDates ?? []), today];
+              const day = date ?? todayKey();
+              const next = [...(x.doneDates ?? []), day];
               const count = next.filter(isThisWeek).length;
-              return { ...x, doneDates: next, done: freq === "daily" ? true : count >= freqTarget(freq) };
+              return { ...x, doneDates: next, done: freq === "daily" ? next.includes(todayKey()) : count >= freqTarget(freq) };
             }),
           },
         })),
-      undoWellnessSession: (list, id) =>
+      undoWellnessSession: (list, id, date) =>
         setState((s) => ({
           ...s,
           wellness: {
@@ -907,15 +942,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
+              const day = date ?? todayKey();
               const dates = [...(x.doneDates ?? [])];
-              for (let i = dates.length - 1; i >= 0; i--) {
-                if (isThisWeek(dates[i])) { dates.splice(i, 1); break; }
+              const exact = dates.lastIndexOf(day);
+              if (exact >= 0) dates.splice(exact, 1);
+              else {
+                for (let i = dates.length - 1; i >= 0; i--) {
+                  if (isThisWeek(dates[i])) { dates.splice(i, 1); break; }
+                }
               }
               const count = dates.filter(isThisWeek).length;
-              return { ...x, doneDates: dates, done: freq === "daily" ? count > 0 : count >= freqTarget(freq) };
+              return { ...x, doneDates: dates, done: freq === "daily" ? dates.includes(todayKey()) : count >= freqTarget(freq) };
             }),
           },
         })),
+
       addWellnessItem: (list, label, freq) =>
         setState((s) => ({
           ...s,
