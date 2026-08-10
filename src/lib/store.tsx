@@ -80,6 +80,9 @@ export type WellnessListKey =
   | "meals"
   | "skinCare"
   | "hairCare"
+  | "skinWeekly"
+  | "hairWeekly"
+  | "worship"
   | "habits"
   | "selfDev"
   | "onlineWork"
@@ -96,8 +99,18 @@ export type JournalEntry = {
   sad: string;
 };
 
+/** قياسات اليوم — كل يوم بتاريخه */
+export type DailyMetrics = {
+  water: number;
+  calories: number;
+  weight: number;
+  sleep: number;
+  steps: number;
+};
+
 export type WellnessState = {
   journal: JournalEntry[];
+  dailyLogs: Record<string, Partial<DailyMetrics>>;
   calorieTarget: number;
   waterCups: number;
   waterGoal: number;
@@ -106,6 +119,9 @@ export type WellnessState = {
   meals: WellnessItem[];
   skinCare: WellnessItem[];
   hairCare: WellnessItem[];
+  skinWeekly: WellnessItem[];
+  hairWeekly: WellnessItem[];
+  worship: WellnessItem[];
   habits: WellnessItem[];
   selfDev: WellnessItem[];
   onlineWork: WellnessItem[];
@@ -118,6 +134,7 @@ export type WellnessState = {
   steps: number;
   stepsGoal: number;
 };
+
 
 
 export type Theme = "light" | "dark";
