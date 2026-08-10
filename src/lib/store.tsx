@@ -894,7 +894,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           wellness: { ...s.wellness, journal: (s.wellness.journal ?? []).filter((x) => x.id !== id) },
         })),
-      toggleWellnessItem: (list, id) =>
+      setDailyMetrics: (date, patch) =>
+        setState((s) => ({
+          ...s,
+          wellness: {
+            ...s.wellness,
+            dailyLogs: { ...(s.wellness.dailyLogs ?? {}), [date]: { ...((s.wellness.dailyLogs ?? {})[date] ?? {}), ...patch } },
+          },
+        })),
+      toggleWellnessItem: (list, id, date) =>
         setState((s) => ({
           ...s,
           wellness: {
@@ -902,16 +910,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
-              const today = new Date().toISOString().slice(0, 10);
+              const day = date ?? todayKey();
               const dates = x.doneDates ?? [];
-              const next = dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today];
-              if (freq === "daily") return { ...x, doneDates: next, done: next.includes(today) };
+              const next = dates.includes(day) ? dates.filter((d) => d !== day) : [...dates, day];
+              if (freq === "daily") return { ...x, doneDates: next, done: next.includes(todayKey()) };
               const count = next.filter(isThisWeek).length;
               return { ...x, doneDates: next, done: count >= freqTarget(freq) };
             }),
           },
         })),
-      logWellnessSession: (list, id) =>
+      logWellnessSession: (list, id, date) =>
         setState((s) => ({
           ...s,
           wellness: {
@@ -919,14 +927,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
-              const today = new Date().toISOString().slice(0, 10);
-              const next = [...(x.doneDates ?? []), today];
+              const day = date ?? todayKey();
+              const next = [...(x.doneDates ?? []), day];
               const count = next.filter(isThisWeek).length;
-              return { ...x, doneDates: next, done: freq === "daily" ? true : count >= freqTarget(freq) };
+              return { ...x, doneDates: next, done: freq === "daily" ? next.includes(todayKey()) : count >= freqTarget(freq) };
             }),
           },
         })),
-      undoWellnessSession: (list, id) =>
+      undoWellnessSession: (list, id, date) =>
         setState((s) => ({
           ...s,
           wellness: {
@@ -934,15 +942,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             [list]: s.wellness[list].map((x) => {
               if (x.id !== id) return x;
               const freq = x.freq ?? "daily";
+              const day = date ?? todayKey();
               const dates = [...(x.doneDates ?? [])];
-              for (let i = dates.length - 1; i >= 0; i--) {
-                if (isThisWeek(dates[i])) { dates.splice(i, 1); break; }
+              const exact = dates.lastIndexOf(day);
+              if (exact >= 0) dates.splice(exact, 1);
+              else {
+                for (let i = dates.length - 1; i >= 0; i--) {
+                  if (isThisWeek(dates[i])) { dates.splice(i, 1); break; }
+                }
               }
               const count = dates.filter(isThisWeek).length;
-              return { ...x, doneDates: dates, done: freq === "daily" ? count > 0 : count >= freqTarget(freq) };
+              return { ...x, doneDates: dates, done: freq === "daily" ? dates.includes(todayKey()) : count >= freqTarget(freq) };
             }),
           },
         })),
+
       addWellnessItem: (list, label, freq) =>
         setState((s) => ({
           ...s,
