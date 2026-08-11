@@ -24,13 +24,6 @@ export const Route = createFileRoute("/wellness")({
   component: Wellness,
 });
 
-const moods = [
-  { key: "great", label: "ممتاز", emoji: "😄" },
-  { key: "good", label: "جيد", emoji: "🙂" },
-  { key: "meh", label: "عادي", emoji: "😐" },
-  { key: "bad", label: "سيء", emoji: "😔" },
-] as const;
-
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const shiftDate = (d: string, delta: number) => {
@@ -181,26 +174,28 @@ function Wellness() {
       </Card>
 
       <SectionTitle>العناية اليومية 🌸</SectionTitle>
-      <ChecklistSection title="للبشرة 🧴" icon={Smile} listKey="skinCare" items={wellness.skinCare ?? []} {...listProps} />
-      <ChecklistSection title="للشعر 💇‍♀️" icon={Sparkles} listKey="hairCare" items={wellness.hairCare ?? []} {...listProps} />
+      <ChecklistSection compact title="للبشرة 🧴" icon={Smile} listKey="skinCare" items={wellness.skinCare ?? []} {...listProps} />
+      <ChecklistSection compact title="للشعر 💇‍♀️" icon={Sparkles} listKey="hairCare" items={wellness.hairCare ?? []} {...listProps} />
 
       <SectionTitle>العناية الأسبوعية — الاثنين والخميس 🗓️</SectionTitle>
-      <ChecklistSection title="للبشرة 🌷" icon={Smile} listKey="skinWeekly" items={wellness.skinWeekly ?? []} weekly
-        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} showDates {...listProps} />
-      <ChecklistSection title="للشعر 🪷" icon={Sparkles} listKey="hairWeekly" items={wellness.hairWeekly ?? []} weekly
-        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} showDates {...listProps} />
+      <ChecklistSection compact title="للبشرة 🌷" icon={Smile} listKey="skinWeekly" items={wellness.skinWeekly ?? []} weekly
+        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
+      <ChecklistSection compact title="للشعر 🪷" icon={Sparkles} listKey="hairWeekly" items={wellness.hairWeekly ?? []} weekly
+        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
 
       <ChecklistSection title="فيتاميناتي 💊" icon={Pill} listKey="vitamins" items={wellness.vitamins ?? []}
         weekly showDates onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
 
-      <ChecklistSection title="عملي الإلكتروني 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork ?? []} {...listProps} />
-      <ChecklistSection title="تطوير الذات 📚" icon={Award} listKey="selfDev" items={wellness.selfDev ?? []} {...listProps} />
-      <ChecklistSection title="العبادات 🤲" icon={HeartPulse} listKey="worship" items={wellness.worship ?? []} {...listProps} />
-      <ChecklistSection title="جدول تمارين المقاومة 🏋️‍♀️" icon={Dumbbell} listKey="workouts" items={wellness.workouts ?? []} {...listProps} />
-
-      <ChecklistSection title="مشاكل أبغى أحلها 💗" icon={HeartPulse} listKey="concerns" items={wellness.concerns ?? []} {...listProps} />
+      <ChecklistSection compact title="أفق للخدمات الإلكترونية 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork ?? []} {...listProps} />
+      <ChecklistSection compact title="العبادات 🤲" icon={HeartPulse} listKey="worship" items={wellness.worship ?? []} {...listProps} />
+      <ChecklistSection compact title="تطوير الذات 📚" icon={Award} listKey="selfDev" items={wellness.selfDev ?? []} {...listProps} />
+      <ChecklistSection compact title="جدول تمارين المقاومة 🏋️‍♀️" icon={Dumbbell} listKey="workouts" items={wellness.workouts ?? []} {...listProps} />
+      <ChecklistSection compact title="جدولي الغذائي اليومي 🥗" icon={Flame} listKey="meals" items={wellness.meals ?? []} {...listProps} />
 
       <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
+
+      <ChecklistSection compact title="مشاكل أبغى أحلها 💗" icon={HeartPulse} listKey="concerns" items={wellness.concerns ?? []} {...listProps} />
+
     </AppShell>
   );
 }
@@ -271,93 +266,61 @@ function JournalSection({
 
   return (
     <>
-      <SectionTitle>يومياتي 🌸 وش أحزنني أو أفرحني</SectionTitle>
-      <Card className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">اليوم</span>
-          <input
-            type="date"
-            value={date}
-            max={today}
-            onChange={(e) => pickDate(e.target.value)}
-            className="rounded-full border border-border bg-input/50 px-3 py-1.5 text-xs outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-2">
-          {moods.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setMood(m.key)}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2.5 transition ${
-                mood === m.key ? "gradient-primary text-primary-foreground shadow-soft" : "bg-muted/50"
-              }`}
-            >
-              <span className="text-xl">{m.emoji}</span>
-              <span className="text-[11px] font-medium">{m.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold text-success">🌷 وش فرّحني اليوم؟</label>
-          <textarea
-            value={happy}
-            onChange={(e) => setHappy(e.target.value)}
-            rows={2}
-            placeholder="اكتبي أجمل شي صار لك..."
-            className="w-full resize-none rounded-2xl border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <label className="block text-xs font-semibold text-destructive">🌧️ وش أحزنني اليوم؟</label>
-          <textarea
-            value={sad}
-            onChange={(e) => setSad(e.target.value)}
-            rows={2}
-            placeholder="فضفضي هنا... كل شي بيمر 💗"
-            className="w-full resize-none rounded-2xl border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
+      <SectionTitle>وش أحزنني / وش فرّحني 📝</SectionTitle>
+      <Card className="space-y-2 p-3">
+        <input
+          type="date"
+          value={date}
+          max={today}
+          onChange={(e) => pickDate(e.target.value)}
+          className="w-full rounded-full border border-border bg-input/50 px-3 py-1.5 text-xs outline-none focus:border-primary"
+        />
+        <input
+          value={happy}
+          onChange={(e) => setHappy(e.target.value)}
+          placeholder="سبب فرحي..."
+          className="w-full rounded-full border border-border bg-input/50 px-3 py-1.5 text-xs outline-none focus:border-success"
+        />
+        <input
+          value={sad}
+          onChange={(e) => setSad(e.target.value)}
+          placeholder="سبب حزني..."
+          className="w-full rounded-full border border-border bg-input/50 px-3 py-1.5 text-xs outline-none focus:border-destructive"
+        />
         <button
           onClick={save}
-          className="w-full rounded-full gradient-primary py-2.5 text-sm font-bold text-primary-foreground shadow-soft"
+          className="w-full rounded-full gradient-primary py-2 text-xs font-bold text-primary-foreground shadow-soft"
         >
-          {current ? "حدّثي يومياتي 💾" : "احفظي يومياتي 💗"}
+          {current ? "تحديث" : "حفظ"}
         </button>
-        <p className="text-center text-[10px] text-muted-foreground">
-          يومياتك محفوظة ما تروح — ترجعين لها متى ما بغيتي 🌙
-        </p>
-      </Card>
 
-      {entries.length > 0 && (
-        <Card className="mt-3 space-y-2 p-3">
-          <p className="px-1 text-xs font-bold text-muted-foreground">أرشيف يومياتي ({entries.length})</p>
-          {visible.map((e) => (
-            <div key={e.id} className="rounded-2xl bg-muted/40 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold">
-                  {moods.find((m) => m.key === e.mood)?.emoji} {dayLabel(e.date)}
-                </span>
-                <div className="flex items-center gap-1">
+        {entries.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            {visible.map((e) => (
+              <div key={e.id} className="flex items-start justify-between gap-2 rounded-xl bg-muted/40 px-2.5 py-1.5">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-muted-foreground">{shortDay(e.date)}</p>
+                  {e.happy && <p className="truncate text-[11px] text-success">فرح: {e.happy}</p>}
+                  {e.sad && <p className="truncate text-[11px] text-destructive">حزن: {e.sad}</p>}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
                   <button onClick={() => pickDate(e.date)} className="text-muted-foreground hover:text-primary" aria-label="فتح">
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-3 w-3" />
                   </button>
                   <button onClick={() => onRemove(e.id)} className="text-muted-foreground hover:text-destructive" aria-label="حذف">
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                   </button>
                 </div>
               </div>
-              {e.happy && <p className="mt-1.5 text-xs text-success">🌷 {e.happy}</p>}
-              {e.sad && <p className="mt-1 text-xs text-destructive">🌧️ {e.sad}</p>}
-            </div>
-          ))}
-          {entries.length > 3 && (
-            <button onClick={() => setShowAll((v) => !v)} className="w-full rounded-full bg-muted py-2 text-xs font-semibold">
-              {showAll ? "إخفاء" : `عرض كل اليوميات (${entries.length})`}
-            </button>
-          )}
-        </Card>
-      )}
+            ))}
+            {entries.length > 3 && (
+              <button onClick={() => setShowAll((v) => !v)} className="w-full rounded-full bg-muted py-1.5 text-[11px] font-semibold">
+                {showAll ? "إخفاء" : `عرض الكل (${entries.length})`}
+              </button>
+            )}
+          </div>
+        )}
+      </Card>
     </>
   );
 }
@@ -370,7 +333,7 @@ const freqLabels: Record<WellnessFreq, string> = {
 const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
 
 function ChecklistSection({
-  title, icon: Icon, listKey, items, date, onToggle, onAdd, onRename, onRemove, weekly, onSetFreq, onLog, onUndo, showDates,
+  title, icon: Icon, listKey, items, date, onToggle, onAdd, onRename, onRemove, weekly, onSetFreq, onLog, onUndo, showDates, compact,
 }: {
   title: string;
   icon: typeof Smile;
@@ -386,6 +349,7 @@ function ChecklistSection({
   onLog?: (list: WellnessListKey, id: string, date?: string) => void;
   onUndo?: (list: WellnessListKey, id: string, date?: string) => void;
   showDates?: boolean;
+  compact?: boolean;
 }) {
   const done = items.filter((i) => isDoneOn(i, date)).length;
   const [editMode, setEditMode] = useState(false);
@@ -426,7 +390,7 @@ function ChecklistSection({
           <span className="text-xs font-normal text-muted-foreground">({done}/{items.length})</span>
         </span>
       </SectionTitle>
-      <Card className="space-y-2 p-3">
+      <Card className={compact ? "space-y-1 p-2" : "space-y-2 p-3"}>
         {items.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">ما فيه عناصر — أضيفي أول واحد ✨</p>
         )}
@@ -438,11 +402,11 @@ function ChecklistSection({
           const doneNow = isDoneOn(i, date);
           const isWeeklyItem = !!weekly && freq !== "daily";
           return (
-            <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
+            <div key={i.id} className={`flex items-center gap-2 rounded-2xl transition hover:bg-muted/50 ${compact ? "p-1.5" : "p-2"}`}>
               <button
                 onClick={() => !editMode && onToggle(listKey, i.id, date)}
                 disabled={editMode}
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
+                className={`grid shrink-0 place-items-center rounded-full border-2 transition ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6"} ${
                   doneNow ? "border-success bg-success text-success-foreground" : "border-border"
                 }`}
               >
@@ -458,7 +422,7 @@ function ChecklistSection({
                 />
               ) : (
                 <div className="min-w-0 flex-1">
-                  <span className={`block truncate text-sm ${doneNow ? "text-muted-foreground line-through" : ""}`}>
+                  <span className={`block truncate ${compact ? "text-xs" : "text-sm"} ${doneNow ? "text-muted-foreground line-through" : ""}`}>
                     {i.label}
                   </span>
                   {weekly && (
