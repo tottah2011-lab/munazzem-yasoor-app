@@ -372,7 +372,7 @@ const freqLabels: Record<WellnessFreq, string> = {
 const freqOrder: WellnessFreq[] = ["daily", "weekly", "twice"];
 
 function ChecklistSection({
-  title, icon: Icon, listKey, items, date, onToggle, onAdd, onRename, onRemove, weekly, onSetFreq, onLog, onUndo, showDates,
+  title, icon: Icon, listKey, items, date, onToggle, onAdd, onRename, onRemove, weekly, onSetFreq, onLog, onUndo, showDates, compact,
 }: {
   title: string;
   icon: typeof Smile;
@@ -388,6 +388,7 @@ function ChecklistSection({
   onLog?: (list: WellnessListKey, id: string, date?: string) => void;
   onUndo?: (list: WellnessListKey, id: string, date?: string) => void;
   showDates?: boolean;
+  compact?: boolean;
 }) {
   const done = items.filter((i) => isDoneOn(i, date)).length;
   const [editMode, setEditMode] = useState(false);
@@ -428,7 +429,7 @@ function ChecklistSection({
           <span className="text-xs font-normal text-muted-foreground">({done}/{items.length})</span>
         </span>
       </SectionTitle>
-      <Card className="space-y-2 p-3">
+      <Card className={compact ? "space-y-1 p-2" : "space-y-2 p-3"}>
         {items.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">ما فيه عناصر — أضيفي أول واحد ✨</p>
         )}
@@ -440,11 +441,11 @@ function ChecklistSection({
           const doneNow = isDoneOn(i, date);
           const isWeeklyItem = !!weekly && freq !== "daily";
           return (
-            <div key={i.id} className="flex items-center gap-2 rounded-2xl p-2 transition hover:bg-muted/50">
+            <div key={i.id} className={`flex items-center gap-2 rounded-2xl transition hover:bg-muted/50 ${compact ? "p-1.5" : "p-2"}`}>
               <button
                 onClick={() => !editMode && onToggle(listKey, i.id, date)}
                 disabled={editMode}
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
+                className={`grid shrink-0 place-items-center rounded-full border-2 transition ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6"} ${
                   doneNow ? "border-success bg-success text-success-foreground" : "border-border"
                 }`}
               >
@@ -460,7 +461,7 @@ function ChecklistSection({
                 />
               ) : (
                 <div className="min-w-0 flex-1">
-                  <span className={`block truncate text-sm ${doneNow ? "text-muted-foreground line-through" : ""}`}>
+                  <span className={`block truncate ${compact ? "text-xs" : "text-sm"} ${doneNow ? "text-muted-foreground line-through" : ""}`}>
                     {i.label}
                   </span>
                   {weekly && (
