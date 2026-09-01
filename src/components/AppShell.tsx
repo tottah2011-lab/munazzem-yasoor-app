@@ -82,6 +82,17 @@ export function AppShell({
 
       <main className="mx-auto max-w-xl px-5 pt-6">{children}</main>
 
+      {/* أيقونة المساعدة على الادخار وإدارة المصاريف */}
+      <Link
+        to="/guide"
+        aria-label="ساعديني في الادخار وإدارة مصاريفي"
+        className="fixed bottom-28 left-4 z-40 grid h-14 w-14 place-items-center rounded-full gradient-primary text-primary-foreground shadow-elegant transition hover:scale-105"
+      >
+        <span className="text-xl">🧭</span>
+      </Link>
+
+
+
       <nav className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2">
         <div className="glass flex items-center gap-1 rounded-full px-2 py-2 shadow-elegant">
           {nav.map(({ to, label, icon: Icon }) => {
