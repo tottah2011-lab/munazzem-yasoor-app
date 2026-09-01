@@ -768,8 +768,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           alinmaSavings: { ...s.alinmaSavings, payments: s.alinmaSavings.payments.filter((x) => x.id !== id) },
         })),
+      addAlinmaBorrow: (b) => {
+        toast.warning("سحبتِ من ادخار الإنماء 💸", { description: `${b.amount} ر.س — ${b.reason}` });
+        setState((s) => ({
+          ...s,
+          alinmaSavings: {
+            ...s.alinmaSavings,
+            total: Math.max(0, s.alinmaSavings.total + b.amount),
+            borrows: [{ ...b, id: uid() }, ...(s.alinmaSavings.borrows ?? [])],
+          },
+        }));
+      },
+      removeAlinmaBorrow: (id) =>
+        setState((s) => {
+          const item = (s.alinmaSavings.borrows ?? []).find((x) => x.id === id);
+          return {
+            ...s,
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              total: Math.max(0, s.alinmaSavings.total - (item?.amount ?? 0)),
+              borrows: (s.alinmaSavings.borrows ?? []).filter((x) => x.id !== id),
+            },
+          };
+        }),
       resetAlinma: () =>
-        setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [] } })),
+        setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [], borrows: [] } })),
+
 
 
       setCurrentMonth: (m) =>
