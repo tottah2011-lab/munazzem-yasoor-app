@@ -158,16 +158,18 @@ function Dashboard() {
     return { todayDone, todayTotal, todayPct, months };
   }, [wellness]);
 
-  // 💜 كل مصاريف الشهر (اسم + تاريخ + مبلغ)
+  // 💜 مصاريف الشهر المدفوعة فقط (اسم + تاريخ + مبلغ)
   const monthExpenses = useMemo(() => {
     const rows = [
-      ...urgent.map((u) => ({
-        id: u.id,
-        name: u.name,
-        date: u.dueDate,
-        amount: u.amount,
-        kind: u.installment && u.installment.monthsTotal > 0 ? "تقسيط" : "التزام",
-      })),
+      ...urgent
+        .filter((u) => (u.installment && u.installment.monthsTotal > 0 ? u.installment.monthsPaid > 0 : u.paid))
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          date: u.dueDate,
+          amount: u.amount,
+          kind: u.installment && u.installment.monthsTotal > 0 ? "قسط مدفوع" : "التزام مدفوع",
+        })),
       ...dailyExpenses.map((d) => ({
         id: d.id,
         name: d.name,
@@ -179,6 +181,7 @@ function Dashboard() {
     const total = rows.reduce((s, r) => s + r.amount, 0);
     return { rows, total, over: total > totalIncome };
   }, [urgent, dailyExpenses, totalIncome]);
+
 
 
 
@@ -345,8 +348,8 @@ function Dashboard() {
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
 
-      {/* 💜 كل مصاريف الشهر */}
-      <SectionTitle>كل مصاريف الشهر 🧾</SectionTitle>
+      {/* 💜 المصاريف المدفوعة */}
+      <SectionTitle>إجمالي المصاريف المدفوعة 🧾</SectionTitle>
       <div
         className={`rounded-3xl border p-4 ${
           monthExpenses.over
@@ -356,11 +359,12 @@ function Dashboard() {
       >
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] text-muted-foreground">إجمالي مصاريف {monthLabel(currentMonth)}</p>
+            <p className="text-[11px] text-muted-foreground">المدفوع فعليًا في {monthLabel(currentMonth)}</p>
             <p className={`text-3xl font-black ${monthExpenses.over ? "text-destructive" : "text-info"}`}>
               {formatSAR(monthExpenses.total)}
             </p>
           </div>
+
           <span
             className={`rounded-full px-3 py-1 text-[11px] font-bold ${
               monthExpenses.over ? "bg-destructive/20 text-destructive" : "bg-info/20 text-info"
@@ -371,7 +375,7 @@ function Dashboard() {
         </div>
 
         {monthExpenses.rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">ما سجّلتِ أي مصروف هالشهر ✨</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">ما فيه مصاريف مدفوعة هالشهر ✨</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {monthExpenses.rows.map((r) => (

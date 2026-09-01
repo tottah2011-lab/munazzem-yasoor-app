@@ -190,10 +190,19 @@ export type AlinmaPayment = {
   note?: string;
 };
 
+export type AlinmaBorrow = {
+  id: string;
+  amount: number;
+  date: string;
+  reason: string;
+};
+
 export type AlinmaSavings = {
   total: number;
   payments: AlinmaPayment[];
+  borrows?: AlinmaBorrow[];
 };
+
 
 export type SurplusEntry = {
   id: string;
@@ -303,6 +312,9 @@ type Ctx = MonthData & {
   setAlinmaTotal: (n: number) => void;
   addAlinmaPayment: (p: Omit<AlinmaPayment, "id">) => void;
   removeAlinmaPayment: (id: string) => void;
+  addAlinmaBorrow: (b: Omit<AlinmaBorrow, "id">) => void;
+  removeAlinmaBorrow: (id: string) => void;
+
   resetAlinma: () => void;
 
   setWellness: (patch: Partial<WellnessState>) => void;
@@ -480,6 +492,24 @@ function emptyMonth(income?: number): MonthData {
   };
 }
 
+/** شهر جديد + ترحيل التقسيط غير المكتمل تلقائيًا */
+function carryMonth(prev?: MonthData): MonthData {
+  const base = emptyMonth(prev?.income);
+  if (!prev) return base;
+  const carried = prev.urgent
+    .filter((x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid < x.installment.monthsTotal)
+    .map((x) => ({ ...x, id: uid(), paid: false }));
+  return {
+    ...base,
+    incomeSources: prev.incomeSources.map((s) => ({ ...s, id: uid(), received: false })),
+    income: prev.income,
+    urgent: carried,
+    monthlyPlan: prev.monthlyPlan.map((p) => ({ ...p, id: uid(), spent: 0, logs: [] })),
+  };
+}
+
+
+
 function seedMonth(): MonthData {
   const incomeSources = defaultIncomeSources();
   return {
@@ -556,7 +586,7 @@ function loadState(): State {
       for (const [k, v] of Object.entries(parsed.months ?? {})) {
         months[k] = normalizeMonth(v as Partial<MonthData>);
       }
-      if (!months[key]) months[key] = emptyMonth();
+      if (!months[key]) months[key] = carryMonth(months[shiftMonth(key, -1)]);
       return {
         currentMonth: key,
         months,
@@ -756,15 +786,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           alinmaSavings: { ...s.alinmaSavings, payments: s.alinmaSavings.payments.filter((x) => x.id !== id) },
         })),
+      addAlinmaBorrow: (b) => {
+        toast.warning("سحبتِ من ادخار الإنماء 💸", { description: `${b.amount} ر.س — ${b.reason}` });
+        setState((s) => ({
+          ...s,
+          alinmaSavings: {
+            ...s.alinmaSavings,
+            total: Math.max(0, s.alinmaSavings.total + b.amount),
+            borrows: [{ ...b, id: uid() }, ...(s.alinmaSavings.borrows ?? [])],
+          },
+        }));
+      },
+      removeAlinmaBorrow: (id) =>
+        setState((s) => {
+          const item = (s.alinmaSavings.borrows ?? []).find((x) => x.id === id);
+          return {
+            ...s,
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              total: Math.max(0, s.alinmaSavings.total - (item?.amount ?? 0)),
+              borrows: (s.alinmaSavings.borrows ?? []).filter((x) => x.id !== id),
+            },
+          };
+        }),
       resetAlinma: () =>
-        setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [] } })),
+        setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [], borrows: [] } })),
+
 
 
       setCurrentMonth: (m) =>
         setState((s) => ({
           ...s,
           currentMonth: m,
-          months: s.months[m] ? s.months : { ...s.months, [m]: emptyMonth(s.months[s.currentMonth]?.income ?? 2000) },
+          months: s.months[m]
+            ? s.months
+            : { ...s.months, [m]: carryMonth(s.months[shiftMonth(m, -1)] ?? s.months[s.currentMonth]) },
         })),
       goPrevMonth: () => {
         const next = shiftMonth(state.currentMonth, -1);
@@ -779,8 +835,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           currentMonth: next,
-          months: s.months[next] ? s.months : { ...s.months, [next]: emptyMonth(cm.income) },
+          months: s.months[next] ? s.months : { ...s.months, [next]: carryMonth(s.months[s.currentMonth]) },
         }));
+
       },
 
       setIncome: (n) => patchMonth({ income: Math.max(0, n) }),
