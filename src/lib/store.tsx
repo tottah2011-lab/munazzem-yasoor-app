@@ -492,6 +492,24 @@ function emptyMonth(income?: number): MonthData {
   };
 }
 
+/** شهر جديد + ترحيل التقسيط غير المكتمل تلقائيًا */
+function carryMonth(prev?: MonthData): MonthData {
+  const base = emptyMonth(prev?.income);
+  if (!prev) return base;
+  const carried = prev.urgent
+    .filter((x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid < x.installment.monthsTotal)
+    .map((x) => ({ ...x, id: uid(), paid: false }));
+  return {
+    ...base,
+    incomeSources: prev.incomeSources.map((s) => ({ ...s, id: uid(), received: false })),
+    income: prev.income,
+    urgent: carried,
+    monthlyPlan: prev.monthlyPlan.map((p) => ({ ...p, id: uid(), spent: 0, logs: [] })),
+  };
+}
+
+
+
 function seedMonth(): MonthData {
   const incomeSources = defaultIncomeSources();
   return {
