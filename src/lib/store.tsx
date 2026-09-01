@@ -586,7 +586,7 @@ function loadState(): State {
       for (const [k, v] of Object.entries(parsed.months ?? {})) {
         months[k] = normalizeMonth(v as Partial<MonthData>);
       }
-      if (!months[key]) months[key] = emptyMonth();
+      if (!months[key]) months[key] = carryMonth(months[shiftMonth(key, -1)]);
       return {
         currentMonth: key,
         months,
