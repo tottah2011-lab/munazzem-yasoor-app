@@ -203,16 +203,21 @@ function InstallmentSection({
           const paidAmount = inst.monthsPaid * e.amount;
           const totalAmount = inst.monthsTotal * e.amount;
           const pct = Math.round((inst.monthsPaid / inst.monthsTotal) * 100);
+          const closed = remainingMonths === 0;
           return (
-            <Card key={e.id}>
+            <Card key={e.id} className={closed ? "bg-muted/60 opacity-80 grayscale" : ""}>
               <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-info/15 text-info">
+                <div
+                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
+                    closed ? "bg-muted text-muted-foreground" : "bg-info/15 text-info"
+                  }`}
+                >
                   <CalendarClock className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold">{e.name}</p>
-                    <p className="shrink-0 font-bold">
+                    <p className={`truncate font-semibold ${closed ? "text-muted-foreground line-through" : ""}`}>{e.name}</p>
+                    <p className={`shrink-0 font-bold ${closed ? "text-muted-foreground" : ""}`}>
                       {formatSAR(e.amount)}
                       <span className="text-[10px] font-normal text-muted-foreground">/شهر</span>
                     </p>
@@ -220,6 +225,7 @@ function InstallmentSection({
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {e.category && <span className="ml-2">{e.category} ·</span>}
                     قسط {inst.monthsPaid} من {inst.monthsTotal}
+                    {!closed && <span className="mr-2 text-[10px]">• ينتقل تلقائيًا للشهر الجاي 🔁</span>}
                   </p>
                 </div>
                 <button
@@ -231,15 +237,22 @@ function InstallmentSection({
                 </button>
               </div>
 
-              <div className="mt-3 rounded-2xl bg-info/5 border border-info/15 p-3">
+              <div
+                className={`mt-3 rounded-2xl border p-3 ${
+                  closed ? "border-border bg-muted/40" : "border-info/15 bg-info/5"
+                }`}
+              >
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">
-                    متبقي {remainingMonths} {remainingMonths === 1 ? "شهر" : "أشهر"}
+                    {closed ? "مسدّد بالكامل ✅" : `متبقي ${remainingMonths} ${remainingMonths === 1 ? "شهر" : "أشهر"}`}
                   </span>
-                  <span className="font-bold text-info">{pct}%</span>
+                  <span className={`font-bold ${closed ? "text-muted-foreground" : "text-success"}`}>{pct}%</span>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-info transition-all" style={{ width: `${pct}%` }} />
+                  <div
+                    className={`h-full rounded-full transition-all ${closed ? "bg-muted-foreground/50" : "bg-success"}`}
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                   <div className="rounded-xl bg-background/60 p-2 text-center">
@@ -253,16 +266,19 @@ function InstallmentSection({
                 </div>
                 <button
                   onClick={() => payInstallmentMonth(e.id)}
-                  disabled={remainingMonths === 0}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full gradient-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                  disabled={closed}
+                  className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full py-2 text-xs font-semibold ${
+                    closed ? "bg-muted text-muted-foreground" : "gradient-primary text-primary-foreground"
+                  }`}
                 >
                   <Banknote className="h-3.5 w-3.5" />
-                  {remainingMonths === 0 ? "اكتمل التقسيط 🎉" : "تسجيل قسط هذا الشهر"}
+                  {closed ? "اكتمل التقسيط 🎉" : "تسجيل قسط هذا الشهر"}
                 </button>
               </div>
             </Card>
           );
         })}
+
       </div>
     </>
   );
