@@ -158,16 +158,18 @@ function Dashboard() {
     return { todayDone, todayTotal, todayPct, months };
   }, [wellness]);
 
-  // 💜 كل مصاريف الشهر (اسم + تاريخ + مبلغ)
+  // 💜 مصاريف الشهر المدفوعة فقط (اسم + تاريخ + مبلغ)
   const monthExpenses = useMemo(() => {
     const rows = [
-      ...urgent.map((u) => ({
-        id: u.id,
-        name: u.name,
-        date: u.dueDate,
-        amount: u.amount,
-        kind: u.installment && u.installment.monthsTotal > 0 ? "تقسيط" : "التزام",
-      })),
+      ...urgent
+        .filter((u) => (u.installment && u.installment.monthsTotal > 0 ? u.installment.monthsPaid > 0 : u.paid))
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          date: u.dueDate,
+          amount: u.amount,
+          kind: u.installment && u.installment.monthsTotal > 0 ? "قسط مدفوع" : "التزام مدفوع",
+        })),
       ...dailyExpenses.map((d) => ({
         id: d.id,
         name: d.name,
@@ -179,6 +181,7 @@ function Dashboard() {
     const total = rows.reduce((s, r) => s + r.amount, 0);
     return { rows, total, over: total > totalIncome };
   }, [urgent, dailyExpenses, totalIncome]);
+
 
 
 
