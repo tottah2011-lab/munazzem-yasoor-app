@@ -348,8 +348,8 @@ function Dashboard() {
         <StatCard label={alinmaLeft > 0 ? "متبقي سداد الإنماء" : "سداد الإنماء ✅"} value={formatSAR(alinmaLeft)} icon={PiggyBank} to="/expenses" tone="from-success/20 to-success/5" />
       </div>
 
-      {/* 💜 كل مصاريف الشهر */}
-      <SectionTitle>كل مصاريف الشهر 🧾</SectionTitle>
+      {/* 💜 المصاريف المدفوعة */}
+      <SectionTitle>إجمالي المصاريف المدفوعة 🧾</SectionTitle>
       <div
         className={`rounded-3xl border p-4 ${
           monthExpenses.over
@@ -359,11 +359,12 @@ function Dashboard() {
       >
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[11px] text-muted-foreground">إجمالي مصاريف {monthLabel(currentMonth)}</p>
+            <p className="text-[11px] text-muted-foreground">المدفوع فعليًا في {monthLabel(currentMonth)}</p>
             <p className={`text-3xl font-black ${monthExpenses.over ? "text-destructive" : "text-info"}`}>
               {formatSAR(monthExpenses.total)}
             </p>
           </div>
+
           <span
             className={`rounded-full px-3 py-1 text-[11px] font-bold ${
               monthExpenses.over ? "bg-destructive/20 text-destructive" : "bg-info/20 text-info"
