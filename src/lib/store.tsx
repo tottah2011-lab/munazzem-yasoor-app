@@ -818,7 +818,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           currentMonth: m,
-          months: s.months[m] ? s.months : { ...s.months, [m]: emptyMonth(s.months[s.currentMonth]?.income ?? 2000) },
+          months: s.months[m]
+            ? s.months
+            : { ...s.months, [m]: carryMonth(s.months[shiftMonth(m, -1)] ?? s.months[s.currentMonth]) },
         })),
       goPrevMonth: () => {
         const next = shiftMonth(state.currentMonth, -1);
@@ -833,8 +835,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           currentMonth: next,
-          months: s.months[next] ? s.months : { ...s.months, [next]: emptyMonth(cm.income) },
+          months: s.months[next] ? s.months : { ...s.months, [next]: carryMonth(s.months[s.currentMonth]) },
         }));
+
       },
 
       setIncome: (n) => patchMonth({ income: Math.max(0, n) }),
