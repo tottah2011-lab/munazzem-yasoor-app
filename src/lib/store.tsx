@@ -312,6 +312,9 @@ type Ctx = MonthData & {
   setAlinmaTotal: (n: number) => void;
   addAlinmaPayment: (p: Omit<AlinmaPayment, "id">) => void;
   removeAlinmaPayment: (id: string) => void;
+  addAlinmaBorrow: (b: Omit<AlinmaBorrow, "id">) => void;
+  removeAlinmaBorrow: (id: string) => void;
+
   resetAlinma: () => void;
 
   setWellness: (patch: Partial<WellnessState>) => void;
