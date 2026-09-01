@@ -190,10 +190,19 @@ export type AlinmaPayment = {
   note?: string;
 };
 
+export type AlinmaBorrow = {
+  id: string;
+  amount: number;
+  date: string;
+  reason: string;
+};
+
 export type AlinmaSavings = {
   total: number;
   payments: AlinmaPayment[];
+  borrows?: AlinmaBorrow[];
 };
+
 
 export type SurplusEntry = {
   id: string;
