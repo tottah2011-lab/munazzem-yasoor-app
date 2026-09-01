@@ -375,7 +375,7 @@ function Dashboard() {
         </div>
 
         {monthExpenses.rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">ما سجّلتِ أي مصروف هالشهر ✨</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">ما فيه مصاريف مدفوعة هالشهر ✨</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {monthExpenses.rows.map((r) => (
