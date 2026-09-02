@@ -702,9 +702,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((s) => {
         const prev = s.months[s.currentMonth] ?? emptyMonth();
         const delta = typeof patch === "function" ? patch(prev) : patch;
+        const months = { ...s.months, [s.currentMonth]: { ...prev, ...delta } };
         return {
           ...s,
-          months: { ...s.months, [s.currentMonth]: { ...prev, ...delta } },
+          months: syncCarriedForward(months, s.currentMonth),
         };
       });
 
