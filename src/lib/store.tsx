@@ -13,6 +13,8 @@ export type UrgentExpense = {
     monthsTotal: number;
     monthsPaid: number;
   };
+  /** قسط مرحّل تلقائيًا من شهر سابق */
+  carried?: boolean;
 };
 
 export type PostponableExpense = {
@@ -498,7 +500,7 @@ function carryMonth(prev?: MonthData): MonthData {
   if (!prev) return base;
   const carried = prev.urgent
     .filter((x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid < x.installment.monthsTotal)
-    .map((x) => ({ ...x, id: uid(), paid: false }));
+    .map((x) => ({ ...x, id: uid(), paid: false, carried: true }));
   return {
     ...base,
     incomeSources: prev.incomeSources.map((s) => ({ ...s, id: uid(), received: false })),
@@ -506,6 +508,50 @@ function carryMonth(prev?: MonthData): MonthData {
     urgent: carried,
     monthlyPlan: prev.monthlyPlan.map((p) => ({ ...p, id: uid(), spent: 0, logs: [] })),
   };
+}
+
+/**
+ * مزامنة الأقساط المرحّلة مع الشهور التالية الموجودة مسبقًا:
+ * - قسط غير مكتمل → ينتقل للشهر التالي (ويبقى حتى يُقفل).
+ * - قسط اكتمل → يُحذف من الشهور التالية.
+ * يعتمد التطابق على الاسم + وجود تقسيط.
+ */
+function syncCarriedForward(months: Record<string, MonthData>, fromKey: string): Record<string, MonthData> {
+  const result = { ...months };
+  let prevKey = fromKey;
+  let prev = result[prevKey];
+  while (prev) {
+    const nextKey = shiftMonth(prevKey, 1);
+    const next = result[nextKey];
+    if (!next) break;
+    const byName = new Map(prev.urgent.filter((x) => x.installment).map((x) => [x.name, x]));
+    const activeNames = new Set(
+      prev.urgent
+        .filter((x) => x.installment && x.installment.monthsPaid < x.installment.monthsTotal)
+        .map((x) => x.name),
+    );
+    // احذف المرحّلة التي اكتملت أو حُذفت من مصدرها
+    const kept = next.urgent.filter((x) => !x.carried || (x.installment && activeNames.has(x.name)));
+    // حدّث تقدّم المرحّلة الباقية من الشهر السابق
+    const updated = kept.map((x) => {
+      if (!x.carried) return x;
+      const src = byName.get(x.name);
+      if (!src?.installment) return x;
+      return { ...x, amount: src.amount, dueDate: src.dueDate, category: src.category, installment: { ...src.installment }, paid: false };
+    });
+    // أضف المرحّلة الجديدة غير الموجودة بعد
+    const have = new Set(updated.filter((x) => x.carried).map((x) => x.name));
+    const additions = [...activeNames]
+      .filter((n) => !have.has(n))
+      .map((n) => {
+        const src = byName.get(n)!;
+        return { ...src, id: uid(), paid: false, carried: true };
+      });
+    result[nextKey] = { ...next, urgent: [...additions, ...updated] };
+    prevKey = nextKey;
+    prev = result[nextKey];
+  }
+  return result;
 }
 
 
