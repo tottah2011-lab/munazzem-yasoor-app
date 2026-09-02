@@ -987,12 +987,17 @@ function DailySection({
 function AlinmaSection({
   showForm, setShowForm,
 }: { showForm: boolean; setShowForm: (v: boolean) => void }) {
-  const { alinmaSavings, setAlinmaTotal, addAlinmaPayment, removeAlinmaPayment, resetAlinma } = useStore();
+  const { alinmaSavings, setAlinmaTotal, addAlinmaPayment, removeAlinmaPayment, resetAlinma, addAlinmaBorrow, removeAlinmaBorrow } = useStore();
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
   const [editTotal, setEditTotal] = useState(false);
   const [totalInput, setTotalInput] = useState(String(alinmaSavings.total || ""));
+  const [showBorrow, setShowBorrow] = useState(false);
+  const [bAmount, setBAmount] = useState("");
+  const [bDate, setBDate] = useState(new Date().toISOString().slice(0, 10));
+  const [bReason, setBReason] = useState("");
+  const borrows = alinmaSavings.borrows ?? [];
 
   const paid = alinmaSavings.payments.reduce((a, b) => a + b.amount, 0);
   const left = Math.max(0, alinmaSavings.total - paid);
@@ -1035,6 +1040,38 @@ function AlinmaSection({
           </button>
         </div>
       </div>
+
+      {/* زر السحب من الادخار */}
+      <button
+        onClick={() => setShowBorrow((v) => !v)}
+        className="mt-3 flex w-full items-center gap-3 rounded-3xl border border-warning/25 bg-warning/10 p-3 text-right transition hover:bg-warning/15"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning/20 text-lg">💸</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">سحبتِ من ادخار الإنماء؟</span>
+          <span className="block text-[11px] text-muted-foreground">سجّلي المبلغ والسبب وينضاف على المطلوب سداده</span>
+        </span>
+      </button>
+
+      {showBorrow && (
+        <Card className="mt-3 space-y-3">
+          <Input label="المبلغ المسحوب" value={bAmount} onChange={setBAmount} type="number" placeholder="0" />
+          <Input label="التاريخ" value={bDate} onChange={setBDate} type="date" />
+          <Input label="السبب" value={bReason} onChange={setBReason} placeholder="مثال: طوارئ سيارة" />
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => {
+                if (!bAmount || !bReason.trim()) return;
+                addAlinmaBorrow({ amount: Number(bAmount), date: bDate, reason: bReason.trim() });
+                setBAmount(""); setBReason(""); setShowBorrow(false);
+              }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >تسجيل السحب</button>
+            <button onClick={() => setShowBorrow(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
 
       {editTotal && (
         <Card className="mt-3 space-y-3">
@@ -1118,6 +1155,29 @@ function AlinmaSection({
           </Card>
         ))}
       </div>
+
+      <SectionTitle>سجل السحوبات 💸</SectionTitle>
+      <div className="space-y-2">
+        {borrows.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">ما سحبتِ شي من ادخارك 💚</p>
+        )}
+        {borrows.map((b) => (
+          <Card key={b.id} className="flex items-center gap-3 border border-warning/20">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning/15 text-lg">💸</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate font-semibold">{b.reason}</p>
+                <p className="shrink-0 font-bold text-warning">{formatSAR(b.amount)}</p>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">📅 {b.date}</p>
+            </div>
+            <button onClick={() => removeAlinmaBorrow(b.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </Card>
+        ))}
+      </div>
+
     </>
   );
 }
