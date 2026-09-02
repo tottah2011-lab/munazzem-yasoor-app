@@ -987,12 +987,17 @@ function DailySection({
 function AlinmaSection({
   showForm, setShowForm,
 }: { showForm: boolean; setShowForm: (v: boolean) => void }) {
-  const { alinmaSavings, setAlinmaTotal, addAlinmaPayment, removeAlinmaPayment, resetAlinma } = useStore();
+  const { alinmaSavings, setAlinmaTotal, addAlinmaPayment, removeAlinmaPayment, resetAlinma, addAlinmaBorrow, removeAlinmaBorrow } = useStore();
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
   const [editTotal, setEditTotal] = useState(false);
   const [totalInput, setTotalInput] = useState(String(alinmaSavings.total || ""));
+  const [showBorrow, setShowBorrow] = useState(false);
+  const [bAmount, setBAmount] = useState("");
+  const [bDate, setBDate] = useState(new Date().toISOString().slice(0, 10));
+  const [bReason, setBReason] = useState("");
+  const borrows = alinmaSavings.borrows ?? [];
 
   const paid = alinmaSavings.payments.reduce((a, b) => a + b.amount, 0);
   const left = Math.max(0, alinmaSavings.total - paid);
