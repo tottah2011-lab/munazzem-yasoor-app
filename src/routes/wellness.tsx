@@ -174,23 +174,34 @@ function Wellness() {
       </Card>
 
       <SectionTitle>العناية اليومية 🌸</SectionTitle>
-      <ChecklistSection compact title="للبشرة 🧴" icon={Smile} listKey="skinCare" items={wellness.skinCare ?? []} {...listProps} />
-      <ChecklistSection compact title="للشعر 💇‍♀️" icon={Sparkles} listKey="hairCare" items={wellness.hairCare ?? []} {...listProps} />
+      <div className="grid grid-cols-2 items-start gap-3">
+        <ChecklistSection compact title="للبشرة 🧴" icon={Smile} listKey="skinCare" items={wellness.skinCare ?? []} {...listProps} />
+        <ChecklistSection compact title="للشعر 💇‍♀️" icon={Sparkles} listKey="hairCare" items={wellness.hairCare ?? []} {...listProps} />
+      </div>
 
       <SectionTitle>العناية الأسبوعية — الاثنين والخميس 🗓️</SectionTitle>
-      <ChecklistSection compact title="للبشرة 🌷" icon={Smile} listKey="skinWeekly" items={wellness.skinWeekly ?? []} weekly
-        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
-      <ChecklistSection compact title="للشعر 🪷" icon={Sparkles} listKey="hairWeekly" items={wellness.hairWeekly ?? []} weekly
-        onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
+      <div className="grid grid-cols-2 items-start gap-3">
+        <ChecklistSection compact title="للبشرة 🌷" icon={Smile} listKey="skinWeekly" items={wellness.skinWeekly ?? []} weekly
+          onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
+        <ChecklistSection compact title="للشعر 🪷" icon={Sparkles} listKey="hairWeekly" items={wellness.hairWeekly ?? []} weekly
+          onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
+      </div>
 
-      <ChecklistSection title="فيتاميناتي 💊" icon={Pill} listKey="vitamins" items={wellness.vitamins ?? []}
+      <ChecklistSection compact title="فيتاميناتي 💊" icon={Pill} listKey="vitamins" items={wellness.vitamins ?? []}
         weekly showDates onSetFreq={setWellnessItemFreq} onLog={logWellnessSession} onUndo={undoWellnessSession} {...listProps} />
 
-      <ChecklistSection compact title="أفق للخدمات الإلكترونية 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork ?? []} {...listProps} />
-      <ChecklistSection compact title="العبادات 🤲" icon={HeartPulse} listKey="worship" items={wellness.worship ?? []} {...listProps} />
+      <SectionTitle>نظامي الصحي 🌿</SectionTitle>
+      <div className="grid grid-cols-2 items-start gap-3">
+        <ChecklistSection compact title="جدول تمارين 🏋️‍♀️" icon={Dumbbell} listKey="workouts" items={wellness.workouts ?? []} {...listProps} />
+        <ChecklistSection compact title="جدول غذائي 🥗" icon={Flame} listKey="meals" items={wellness.meals ?? []} {...listProps} />
+      </div>
+
+      <div className="grid grid-cols-2 items-start gap-3">
+        <ChecklistSection compact title="أفق للخدمات 💻" icon={Laptop} listKey="onlineWork" items={wellness.onlineWork ?? []} {...listProps} />
+        <ChecklistSection compact title="العبادات 🤲" icon={HeartPulse} listKey="worship" items={wellness.worship ?? []} {...listProps} />
+      </div>
+
       <ChecklistSection compact title="تطوير الذات 📚" icon={Award} listKey="selfDev" items={wellness.selfDev ?? []} {...listProps} />
-      <ChecklistSection compact title="جدول تمارين المقاومة 🏋️‍♀️" icon={Dumbbell} listKey="workouts" items={wellness.workouts ?? []} {...listProps} />
-      <ChecklistSection compact title="جدولي الغذائي اليومي 🥗" icon={Flame} listKey="meals" items={wellness.meals ?? []} {...listProps} />
 
       <JournalSection entries={wellness.journal ?? []} onSave={saveJournalEntry} onRemove={removeJournalEntry} />
 
