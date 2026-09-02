@@ -862,27 +862,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
 
       setCurrentMonth: (m) =>
-        setState((s) => ({
-          ...s,
-          currentMonth: m,
-          months: s.months[m]
+        setState((s) => {
+          let months = s.months[m]
             ? s.months
-            : { ...s.months, [m]: carryMonth(s.months[shiftMonth(m, -1)] ?? s.months[s.currentMonth]) },
-        })),
+            : { ...s.months, [m]: carryMonth(s.months[shiftMonth(m, -1)] ?? s.months[s.currentMonth]) };
+          // حدّث الأقساط المرحّلة من الشهر السابق حتى لو كان الشهر موجودًا مسبقًا
+          const prevKey = shiftMonth(m, -1);
+          if (months[prevKey]) months = syncCarriedForward(months, prevKey);
+          return { ...s, currentMonth: m, months };
+        }),
       goPrevMonth: () => {
         const next = shiftMonth(state.currentMonth, -1);
-        setState((s) => ({
-          ...s,
-          currentMonth: next,
-          months: s.months[next] ? s.months : { ...s.months, [next]: emptyMonth(cm.income) },
-        }));
+        setState((s) => {
+          let months = s.months[next] ? s.months : { ...s.months, [next]: emptyMonth(cm.income) };
+          const prevKey = shiftMonth(next, -1);
+          if (months[prevKey]) months = syncCarriedForward(months, prevKey);
+          return { ...s, currentMonth: next, months };
+        });
       },
       goNextMonth: () => {
         const next = shiftMonth(state.currentMonth, 1);
         setState((s) => ({
           ...s,
           currentMonth: next,
-          months: s.months[next] ? s.months : { ...s.months, [next]: carryMonth(s.months[s.currentMonth]) },
+          months: s.months[next]
+            ? syncCarriedForward(s.months, s.currentMonth)
+            : { ...s.months, [next]: carryMonth(s.months[s.currentMonth]) },
         }));
 
       },
