@@ -1155,6 +1155,29 @@ function AlinmaSection({
           </Card>
         ))}
       </div>
+
+      <SectionTitle>سجل السحوبات 💸</SectionTitle>
+      <div className="space-y-2">
+        {borrows.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">ما سحبتِ شي من ادخارك 💚</p>
+        )}
+        {borrows.map((b) => (
+          <Card key={b.id} className="flex items-center gap-3 border border-warning/20">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning/15 text-lg">💸</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate font-semibold">{b.reason}</p>
+                <p className="shrink-0 font-bold text-warning">{formatSAR(b.amount)}</p>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">📅 {b.date}</p>
+            </div>
+            <button onClick={() => removeAlinmaBorrow(b.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </Card>
+        ))}
+      </div>
+
     </>
   );
 }
