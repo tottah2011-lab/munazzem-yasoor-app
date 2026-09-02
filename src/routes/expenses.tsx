@@ -1041,6 +1041,38 @@ function AlinmaSection({
         </div>
       </div>
 
+      {/* زر السحب من الادخار */}
+      <button
+        onClick={() => setShowBorrow((v) => !v)}
+        className="mt-3 flex w-full items-center gap-3 rounded-3xl border border-warning/25 bg-warning/10 p-3 text-right transition hover:bg-warning/15"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning/20 text-lg">💸</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold">سحبتِ من ادخار الإنماء؟</span>
+          <span className="block text-[11px] text-muted-foreground">سجّلي المبلغ والسبب وينضاف على المطلوب سداده</span>
+        </span>
+      </button>
+
+      {showBorrow && (
+        <Card className="mt-3 space-y-3">
+          <Input label="المبلغ المسحوب" value={bAmount} onChange={setBAmount} type="number" placeholder="0" />
+          <Input label="التاريخ" value={bDate} onChange={setBDate} type="date" />
+          <Input label="السبب" value={bReason} onChange={setBReason} placeholder="مثال: طوارئ سيارة" />
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => {
+                if (!bAmount || !bReason.trim()) return;
+                addAlinmaBorrow({ amount: Number(bAmount), date: bDate, reason: bReason.trim() });
+                setBAmount(""); setBReason(""); setShowBorrow(false);
+              }}
+              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            >تسجيل السحب</button>
+            <button onClick={() => setShowBorrow(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
+          </div>
+        </Card>
+      )}
+
+
       {editTotal && (
         <Card className="mt-3 space-y-3">
           <Input label="إجمالي المبلغ المقترض من ادخارك" value={totalInput} onChange={setTotalInput} type="number" placeholder="0" />
