@@ -501,11 +501,15 @@ function carryMonth(prev?: MonthData): MonthData {
   const carried = prev.urgent
     .filter((x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid < x.installment.monthsTotal)
     .map((x) => ({ ...x, id: uid(), paid: false, carried: true }));
+  const carriedWishlist = (prev.postponable ?? [])
+    .filter((x) => !x.bought)
+    .map((x) => ({ ...x, id: uid(), carried: true }));
   return {
     ...base,
     incomeSources: prev.incomeSources.map((s) => ({ ...s, id: uid(), received: false })),
     income: prev.income,
     urgent: carried,
+    postponable: carriedWishlist,
     monthlyPlan: prev.monthlyPlan.map((p) => ({ ...p, id: uid(), spent: 0, logs: [] })),
   };
 }
