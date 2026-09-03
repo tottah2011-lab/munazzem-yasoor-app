@@ -5,7 +5,7 @@ import {
   Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet, Zap,
 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, useStore } from "@/lib/store";
+import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
 
 
