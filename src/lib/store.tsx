@@ -27,6 +27,7 @@ export type PostponableExpense = {
   bought?: boolean;
   boughtDate?: string;
   icon?: string;
+  carried?: boolean;
 };
 
 
@@ -501,11 +502,15 @@ function carryMonth(prev?: MonthData): MonthData {
   const carried = prev.urgent
     .filter((x) => x.installment && x.installment.monthsTotal > 0 && x.installment.monthsPaid < x.installment.monthsTotal)
     .map((x) => ({ ...x, id: uid(), paid: false, carried: true }));
+  const carriedWishlist = (prev.postponable ?? [])
+    .filter((x) => !x.bought)
+    .map((x) => ({ ...x, id: uid(), carried: true }));
   return {
     ...base,
     incomeSources: prev.incomeSources.map((s) => ({ ...s, id: uid(), received: false })),
     income: prev.income,
     urgent: carried,
+    postponable: carriedWishlist,
     monthlyPlan: prev.monthlyPlan.map((p) => ({ ...p, id: uid(), spent: 0, logs: [] })),
   };
 }
@@ -547,7 +552,21 @@ function syncCarriedForward(months: Record<string, MonthData>, fromKey: string):
         const src = byName.get(n)!;
         return { ...src, id: uid(), paid: false, carried: true };
       });
-    result[nextKey] = { ...next, urgent: [...additions, ...updated] };
+    // مزامنة قائمة الأمنيات المرحّلة: غير المشتراة تنتقل، المشتراة/المحذوفة تختفي
+    const wishByName = new Map((prev.postponable ?? []).map((x) => [x.name, x]));
+    const activeWishNames = new Set((prev.postponable ?? []).filter((x) => !x.bought).map((x) => x.name));
+    const keptWish = (next.postponable ?? []).filter((x) => !x.carried || activeWishNames.has(x.name));
+    const updatedWish = keptWish.map((x) => {
+      if (!x.carried) return x;
+      const src = wishByName.get(x.name);
+      if (!src) return x;
+      return { ...x, amount: src.amount, priority: src.priority, category: src.category, notes: src.notes, icon: src.icon, bought: false, boughtDate: undefined };
+    });
+    const haveWish = new Set(updatedWish.filter((x) => x.carried).map((x) => x.name));
+    const wishAdditions = [...activeWishNames]
+      .filter((n) => !haveWish.has(n))
+      .map((n) => ({ ...wishByName.get(n)!, id: uid(), carried: true }));
+    result[nextKey] = { ...next, urgent: [...additions, ...updated], postponable: [...wishAdditions, ...updatedWish] };
     prevKey = nextKey;
     prev = result[nextKey];
   }
