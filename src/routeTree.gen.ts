@@ -14,7 +14,6 @@ import { Route as UrgentRouteImport } from './routes/urgent'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PostponableRouteImport } from './routes/postponable'
 import { Route as PlannerRouteImport } from './routes/planner'
-import { Route as GuideRouteImport } from './routes/guide'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as DebtsRouteImport } from './routes/debts'
 import { Route as IndexRouteImport } from './routes/index'
@@ -44,11 +43,6 @@ const PlannerRoute = PlannerRouteImport.update({
   path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GuideRoute = GuideRouteImport.update({
-  id: '/guide',
-  path: '/guide',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ExpensesRoute = ExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -69,7 +63,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/debts': typeof DebtsRoute
   '/expenses': typeof ExpensesRoute
-  '/guide': typeof GuideRoute
   '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/settings': typeof SettingsRoute
@@ -80,7 +73,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/debts': typeof DebtsRoute
   '/expenses': typeof ExpensesRoute
-  '/guide': typeof GuideRoute
   '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/settings': typeof SettingsRoute
@@ -92,7 +84,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/debts': typeof DebtsRoute
   '/expenses': typeof ExpensesRoute
-  '/guide': typeof GuideRoute
   '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/settings': typeof SettingsRoute
@@ -105,7 +96,6 @@ export interface FileRouteTypes {
     | '/'
     | '/debts'
     | '/expenses'
-    | '/guide'
     | '/planner'
     | '/postponable'
     | '/settings'
@@ -116,7 +106,6 @@ export interface FileRouteTypes {
     | '/'
     | '/debts'
     | '/expenses'
-    | '/guide'
     | '/planner'
     | '/postponable'
     | '/settings'
@@ -127,7 +116,6 @@ export interface FileRouteTypes {
     | '/'
     | '/debts'
     | '/expenses'
-    | '/guide'
     | '/planner'
     | '/postponable'
     | '/settings'
@@ -139,7 +127,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DebtsRoute: typeof DebtsRoute
   ExpensesRoute: typeof ExpensesRoute
-  GuideRoute: typeof GuideRoute
   PlannerRoute: typeof PlannerRoute
   PostponableRoute: typeof PostponableRoute
   SettingsRoute: typeof SettingsRoute
@@ -184,13 +171,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/guide': {
-      id: '/guide'
-      path: '/guide'
-      fullPath: '/guide'
-      preLoaderRoute: typeof GuideRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/expenses': {
       id: '/expenses'
       path: '/expenses'
@@ -219,7 +199,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DebtsRoute: DebtsRoute,
   ExpensesRoute: ExpensesRoute,
-  GuideRoute: GuideRoute,
   PlannerRoute: PlannerRoute,
   PostponableRoute: PostponableRoute,
   SettingsRoute: SettingsRoute,
