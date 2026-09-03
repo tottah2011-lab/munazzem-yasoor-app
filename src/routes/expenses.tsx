@@ -5,7 +5,7 @@ import {
   Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet, Zap,
 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
-import { formatSAR, useStore } from "@/lib/store";
+import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
 
 
@@ -1156,29 +1156,116 @@ function AlinmaSection({
         ))}
       </div>
 
-      <SectionTitle>سجل السحوبات 💸</SectionTitle>
-      <div className="space-y-2">
-        {borrows.length === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">ما سحبتِ شي من ادخارك 💚</p>
-        )}
-        {borrows.map((b) => (
-          <Card key={b.id} className="flex items-center gap-3 border border-warning/20">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning/15 text-lg">💸</div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate font-semibold">{b.reason}</p>
-                <p className="shrink-0 font-bold text-warning">{formatSAR(b.amount)}</p>
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">📅 {b.date}</p>
-            </div>
-            <button onClick={() => removeAlinmaBorrow(b.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </Card>
-        ))}
-      </div>
+      <BorrowsLog borrows={borrows} onRemove={removeAlinmaBorrow} />
 
     </>
+  );
+}
+
+/* ---------------- سجل سحوبات الإنماء الكامل (مجمّع شهريًا تلقائيًا) ---------------- */
+
+function BorrowsLog({
+  borrows, onRemove,
+}: { borrows: { id: string; amount: number; date: string; reason: string }[]; onRemove: (id: string) => void }) {
+  const [openMonth, setOpenMonth] = useState<string | null>(null);
+
+  const totalBorrowed = borrows.reduce((s, b) => s + b.amount, 0);
+
+  // تجميع تلقائي حسب الشهر (YYYY-MM) — الأحدث أولًا
+  const byMonth = new Map<string, typeof borrows>();
+  for (const b of borrows) {
+    const key = (b.date || "").slice(0, 7) || "غير محدد";
+    if (!byMonth.has(key)) byMonth.set(key, []);
+    byMonth.get(key)!.push(b);
+  }
+  const monthKeys = [...byMonth.keys()].filter((k) => k !== "غير محدد").sort((a, b) => b.localeCompare(a));
+  if (byMonth.has("غير محدد")) monthKeys.push("غير محدد");
+
+  const maxMonth = Math.max(0, ...monthKeys.filter((k) => k !== "غير محدد").map((k) => byMonth.get(k)!.reduce((s, b) => s + b.amount, 0)));
+
+  return (
+    <div className="mt-6">
+      <SectionTitle>سجل السحوبات الكامل 💸</SectionTitle>
+
+      {borrows.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">ما سحبتِ شي من ادخارك 💚</p>
+      ) : (
+        <>
+          {/* ملخص عام */}
+          <div className="grid grid-cols-3 gap-2">
+            <Card className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground">إجمالي المسحوب</p>
+              <p className="mt-1 text-sm font-bold text-warning">{formatSAR(totalBorrowed)}</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground">عدد السحوبات</p>
+              <p className="mt-1 text-sm font-bold">{borrows.length}</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground">الشهور</p>
+              <p className="mt-1 text-sm font-bold">{monthKeys.length}</p>
+            </Card>
+          </div>
+
+          {/* متابعة شهرية تلقائية */}
+          <div className="mt-3 space-y-2">
+            {monthKeys.map((key) => {
+              const items = byMonth.get(key)!;
+              const monthTotal = items.reduce((s, b) => s + b.amount, 0);
+              const open = openMonth === key;
+              const label = key === "غير محدد" ? key : monthLabel(key);
+              return (
+                <Card key={key} className="overflow-hidden p-0">
+                  <button
+                    onClick={() => setOpenMonth(open ? null : key)}
+                    className="flex w-full items-center gap-3 p-3 text-right"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning/15 text-lg">🗓️</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-bold">{label}</span>
+                        <span className="shrink-0 text-sm font-bold text-warning">{formatSAR(monthTotal)}</span>
+                      </span>
+                      <span className="mt-1 block">
+                        <span className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>{items.length} {items.length === 1 ? "سحبة" : "سحوبات"}</span>
+                          <span>{open ? "▲ إخفاء" : "▼ التفاصيل"}</span>
+                        </span>
+                        <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted">
+                          <span
+                            className="block h-full rounded-full bg-warning/70 transition-all"
+                            style={{ width: `${maxMonth > 0 ? Math.max(6, Math.round((monthTotal / maxMonth) * 100)) : 0}%` }}
+                          />
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="space-y-2 border-t border-border/60 p-3">
+                      {items.map((b) => (
+                        <div key={b.id} className="flex items-center gap-3 rounded-2xl bg-warning/5 p-2.5">
+                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-warning/15 text-base">💸</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-sm font-semibold">{b.reason}</span>
+                              <span className="shrink-0 text-sm font-bold text-warning">{formatSAR(b.amount)}</span>
+                            </span>
+                            <span className="mt-0.5 block text-[11px] text-muted-foreground">📅 {b.date}</span>
+                          </span>
+                          <button onClick={() => onRemove(b.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
