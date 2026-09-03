@@ -27,6 +27,7 @@ export type PostponableExpense = {
   bought?: boolean;
   boughtDate?: string;
   icon?: string;
+  carried?: boolean;
 };
 
 
