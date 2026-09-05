@@ -191,6 +191,8 @@ export type AlinmaPayment = {
   amount: number;
   date: string;
   note?: string;
+  /** ربط السداد بسحبة معيّنة */
+  borrowId?: string;
 };
 
 export type AlinmaBorrow = {
@@ -198,6 +200,8 @@ export type AlinmaBorrow = {
   amount: number;
   date: string;
   reason: string;
+  /** كم سُدد من هذي السحبة */
+  paidAmount?: number;
 };
 
 export type AlinmaSavings = {
@@ -205,6 +209,20 @@ export type AlinmaSavings = {
   payments: AlinmaPayment[];
   borrows?: AlinmaBorrow[];
 };
+
+/** أهداف 2027 — أحلامي وحياتي 💫 */
+export type Goal2027 = {
+  id: string;
+  title: string;
+  icon: string;
+  area: "مالي" | "صحة" | "روح" | "عمل" | "حياة";
+  note?: string;
+  target?: number;
+  saved?: number;
+  done: boolean;
+  doneDate?: string;
+};
+
 
 
 export type SurplusEntry = {
