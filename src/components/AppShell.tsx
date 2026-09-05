@@ -7,8 +7,10 @@ const nav = [
   { to: "/", label: "الرئيسية", icon: Home, emoji: "🏠" },
   { to: "/expenses", label: "المصاريف", icon: Wallet, emoji: "💳" },
   { to: "/planner", label: "التخطيط", icon: Sparkles, emoji: "✨" },
+  { to: "/goals", label: "أهداف 2027", icon: Target, emoji: "🎯" },
   { to: "/wellness", label: "العناية", icon: Heart, emoji: "💖" },
 ] as const;
+
 
 export function AppShell({
   title,
