@@ -191,6 +191,8 @@ export type AlinmaPayment = {
   amount: number;
   date: string;
   note?: string;
+  /** ربط السداد بسحبة معيّنة */
+  borrowId?: string;
 };
 
 export type AlinmaBorrow = {
@@ -198,6 +200,8 @@ export type AlinmaBorrow = {
   amount: number;
   date: string;
   reason: string;
+  /** كم سُدد من هذي السحبة */
+  paidAmount?: number;
 };
 
 export type AlinmaSavings = {
@@ -205,6 +209,20 @@ export type AlinmaSavings = {
   payments: AlinmaPayment[];
   borrows?: AlinmaBorrow[];
 };
+
+/** أهداف 2027 — أحلامي وحياتي 💫 */
+export type Goal2027 = {
+  id: string;
+  title: string;
+  icon: string;
+  area: "مالي" | "صحة" | "روح" | "عمل" | "حياة";
+  note?: string;
+  target?: number;
+  saved?: number;
+  done: boolean;
+  doneDate?: string;
+};
+
 
 
 export type SurplusEntry = {
@@ -255,6 +273,7 @@ type State = {
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
   surplusEntries: SurplusEntry[];
+  goals2027: Goal2027[];
 };
 
 
@@ -275,6 +294,7 @@ type Ctx = MonthData & {
   budgetSplit: BudgetSplit;
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
+  goals2027: Goal2027[];
 
 
   setCurrentMonth: (m: string) => void;
@@ -317,6 +337,14 @@ type Ctx = MonthData & {
   removeAlinmaPayment: (id: string) => void;
   addAlinmaBorrow: (b: Omit<AlinmaBorrow, "id">) => void;
   removeAlinmaBorrow: (id: string) => void;
+  payAlinmaBorrow: (borrowId: string, amount: number, date?: string) => void;
+  carryFromPrevMonth: () => void;
+
+  addGoal2027: (g: Omit<Goal2027, "id" | "done">) => void;
+  updateGoal2027: (id: string, patch: Partial<Goal2027>) => void;
+  toggleGoal2027: (id: string) => void;
+  addToGoal2027: (id: string, amount: number) => void;
+  removeGoal2027: (id: string) => void;
 
   resetAlinma: () => void;
 
@@ -575,6 +603,28 @@ function syncCarriedForward(months: Record<string, MonthData>, fromKey: string):
 
 
 
+/** يعبّي أي شهر ناقص بين أقدم شهر وأحدث شهر (أو الشهر الحالي) بترحيل تلقائي */
+function fillMonthGaps(months: Record<string, MonthData>, currentKey: string): Record<string, MonthData> {
+  const keys = Object.keys(months).sort();
+  if (keys.length === 0) return months;
+  const result = { ...months };
+  const last = [currentKey, keys[keys.length - 1]].sort()[1];
+  let k = keys[0];
+  while (k < last) {
+    const next = shiftMonth(k, 1);
+    if (!result[next]) result[next] = carryMonth(result[k]);
+    k = next;
+  }
+  return result;
+}
+
+/** يشغّل الترحيل التلقائي على كل الشهور من الأقدم للأحدث */
+function syncAllMonths(months: Record<string, MonthData>): Record<string, MonthData> {
+  const keys = Object.keys(months).sort();
+  if (keys.length === 0) return months;
+  return syncCarriedForward(months, keys[0]);
+}
+
 function seedMonth(): MonthData {
   const incomeSources = defaultIncomeSources();
   return {
@@ -605,6 +655,17 @@ function seedMonth(): MonthData {
   };
 }
 
+export function defaultGoals2027(): Goal2027[] {
+  return [
+    { id: uid(), title: "أسدد كل التزاماتي وأبدأ 2027 بصفر ديون", icon: "🕊️", area: "مالي", done: false },
+    { id: uid(), title: "صندوق طوارئ يكفيني 6 شهور", icon: "🏦", area: "مالي", target: 10000, saved: 0, done: false },
+    { id: uid(), title: "روتين عناية ثابت وبشرة صافية", icon: "🌸", area: "صحة", done: false },
+    { id: uid(), title: "ورد يومي من القرآن ما ينقطع", icon: "📖", area: "روح", done: false },
+    { id: uid(), title: "أفق للخدمات الإلكترونية تصير دخل ثابت", icon: "💻", area: "عمل", done: false },
+    { id: uid(), title: "رحلة أحلامي 💗", icon: "✈️", area: "حياة", target: 6000, saved: 0, done: false },
+  ];
+}
+
 function defaultState(): State {
   const key = monthKey();
   return {
@@ -619,6 +680,7 @@ function defaultState(): State {
     ],
     alinmaSavings: { total: 0, payments: [] },
     surplusEntries: [],
+    goals2027: defaultGoals2027(),
   };
 }
 
@@ -652,15 +714,17 @@ function loadState(): State {
         months[k] = normalizeMonth(v as Partial<MonthData>);
       }
       if (!months[key]) months[key] = carryMonth(months[shiftMonth(key, -1)]);
+      const synced = syncAllMonths(fillMonthGaps(months, key));
       return {
         currentMonth: key,
-        months,
+        months: synced,
         wellness: { ...defaultWellness, ...(parsed.wellness ?? {}) },
         theme: parsed.theme ?? "light",
         budgetSplit: parsed.budgetSplit ?? { needs: 50, wants: 30, savings: 20 },
         savings: parsed.savings ?? [],
         alinmaSavings: parsed.alinmaSavings ?? { total: 0, payments: [] },
         surplusEntries: parsed.surplusEntries ?? [],
+        goals2027: parsed.goals2027 ?? defaultGoals2027(),
       };
     }
     // migrate legacy v1
@@ -687,6 +751,7 @@ function loadState(): State {
         savings: p.savings ?? [],
         alinmaSavings: { total: 0, payments: [] },
         surplusEntries: [],
+        goals2027: defaultGoals2027(),
       };
     }
   } catch {}
@@ -755,6 +820,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       budgetSplit: state.budgetSplit,
       savings: state.savings,
       alinmaSavings: state.alinmaSavings,
+      goals2027: state.goals2027 ?? [],
 
       toggleWishBought: (id) => {
         const item = cm.postponable.find((x) => x.id === id);
@@ -848,10 +914,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         });
       },
       removeAlinmaPayment: (id) =>
-        setState((s) => ({
-          ...s,
-          alinmaSavings: { ...s.alinmaSavings, payments: s.alinmaSavings.payments.filter((x) => x.id !== id) },
-        })),
+        setState((s) => {
+          const p = s.alinmaSavings.payments.find((x) => x.id === id);
+          return {
+            ...s,
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              payments: s.alinmaSavings.payments.filter((x) => x.id !== id),
+              borrows: (s.alinmaSavings.borrows ?? []).map((b) =>
+                p?.borrowId && b.id === p.borrowId
+                  ? { ...b, paidAmount: Math.max(0, (b.paidAmount ?? 0) - p.amount) }
+                  : b,
+              ),
+            },
+          };
+        }),
       addAlinmaBorrow: (b) => {
         toast.warning("سحبتِ من ادخار الإنماء 💸", { description: `${b.amount} ر.س — ${b.reason}` });
         setState((s) => ({
@@ -875,6 +952,67 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             },
           };
         }),
+      payAlinmaBorrow: (borrowId, amount, date) =>
+        setState((s) => {
+          const list = s.alinmaSavings.borrows ?? [];
+          const b = list.find((x) => x.id === borrowId);
+          if (!b || amount <= 0) return s;
+          const already = b.paidAmount ?? 0;
+          const pay = Math.min(amount, Math.max(0, b.amount - already));
+          if (pay <= 0) return s;
+          const nowPaid = already + pay;
+          const day = date || new Date().toISOString().slice(0, 10);
+          if (nowPaid >= b.amount) {
+            toast.success("انتقلت للمسدّد 🎉", { description: `${b.reason} — سُدّدت بالكامل 💚` });
+          } else {
+            toast.success("قسط جديد للإنماء 💪", {
+              description: `${b.reason} — دفعتِ ${pay} ر.س، متبقي ${b.amount - nowPaid} ر.س`,
+            });
+          }
+          return {
+            ...s,
+            alinmaSavings: {
+              ...s.alinmaSavings,
+              borrows: list.map((x) => (x.id === borrowId ? { ...x, paidAmount: nowPaid } : x)),
+              payments: [
+                { id: uid(), amount: pay, date: day, note: b.reason, borrowId },
+                ...s.alinmaSavings.payments,
+              ],
+            },
+          };
+        }),
+
+      carryFromPrevMonth: () =>
+        setState((s) => {
+          const prevKey = shiftMonth(s.currentMonth, -1);
+          const prev = s.months[prevKey];
+          if (!prev) {
+            toast.error("ما فيه شهر سابق مسجّل 🌷");
+            return s;
+          }
+          const cur = s.months[s.currentMonth] ?? emptyMonth(prev.income);
+          const haveUrgent = new Set(cur.urgent.map((x) => x.name));
+          const haveWish = new Set(cur.postponable.map((x) => x.name));
+          const addUrgent = prev.urgent
+            .filter((x) => x.installment && x.installment.monthsPaid < x.installment.monthsTotal && !haveUrgent.has(x.name))
+            .map((x) => ({ ...x, id: uid(), paid: false, carried: true }));
+          const addWish = (prev.postponable ?? [])
+            .filter((x) => !x.bought && !haveWish.has(x.name))
+            .map((x) => ({ ...x, id: uid(), carried: true }));
+          const count = addUrgent.length + addWish.length;
+          if (count === 0) toast.info("كل شي منقول ومحدّث ✨");
+          else toast.success(`تم ترحيل ${count} عنصر من ${monthLabel(prevKey)} 💚`);
+          const months = {
+            ...s.months,
+            [s.currentMonth]: {
+              ...cur,
+              urgent: [...addUrgent, ...cur.urgent],
+              postponable: [...addWish, ...cur.postponable],
+            },
+          };
+          return { ...s, months: syncAllMonths(months) };
+        }),
+
       resetAlinma: () =>
         setState((s) => ({ ...s, alinmaSavings: { total: 0, payments: [], borrows: [] } })),
 
@@ -1201,6 +1339,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
       removePlanItem: (id) =>
         patchMonth((m) => ({ monthlyPlan: m.monthlyPlan.filter((x) => x.id !== id) })),
+
+      addGoal2027: (g) => {
+        toast.success("هدف جديد لـ2027 💫", { description: g.title });
+        setState((s) => ({ ...s, goals2027: [{ ...g, id: uid(), done: false }, ...(s.goals2027 ?? [])] }));
+      },
+      updateGoal2027: (id, patch) =>
+        setState((s) => ({ ...s, goals2027: (s.goals2027 ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      toggleGoal2027: (id) =>
+        setState((s) => {
+          const g = (s.goals2027 ?? []).find((x) => x.id === id);
+          if (g && !g.done) toast.success("تحقق حلم! 🎉", { description: `${g.icon} ${g.title}` });
+          return {
+            ...s,
+            goals2027: (s.goals2027 ?? []).map((x) =>
+              x.id === id
+                ? { ...x, done: !x.done, doneDate: !x.done ? new Date().toISOString().slice(0, 10) : undefined }
+                : x,
+            ),
+          };
+        }),
+      addToGoal2027: (id, amount) =>
+        setState((s) => ({
+          ...s,
+          goals2027: (s.goals2027 ?? []).map((x) =>
+            x.id === id ? { ...x, saved: Math.max(0, (x.saved ?? 0) + amount) } : x,
+          ),
+        })),
+      removeGoal2027: (id) =>
+        setState((s) => ({ ...s, goals2027: (s.goals2027 ?? []).filter((x) => x.id !== id) })),
 
       claimReward: (note) => {
         toast.success("مبروك! تستحقين هذي المكافأة 🎁✨", { description: note || "التزامك رائع هذا الشهر" });
