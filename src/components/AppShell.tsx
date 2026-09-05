@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Home, Wallet, Heart, Moon, Sun, Settings, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Wallet, Heart, Moon, Sun, Settings, Sparkles, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { monthLabel, useStore } from "@/lib/store";
 
