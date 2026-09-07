@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Plus, Sparkles, Trash2 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, useStore, type Goal2027 } from "@/lib/store";
@@ -30,7 +30,13 @@ const areaStyle: Record<Goal2027["area"], string> = {
 const iconChoices = ["💫", "🕊️", "🏦", "🌸", "📖", "💻", "✈️", "🏡", "🚗", "💍", "🎓", "🌱", "💗", "🏆"];
 
 function GoalsPage() {
-  const { goals2027, addGoal2027, toggleGoal2027, removeGoal2027, addToGoal2027 } = useStore();
+  const { goals2027, addGoal2027, toggleGoal2027, removeGoal2027, addToGoal2027, updateGoal2027, autoFundGoals, currentMonth, alinmaSavings } = useStore();
+
+  // ادخار تلقائي شهري لكل حلم عند فتح الصفحة أو تغيّر الشهر
+  useEffect(() => { autoFundGoals(); }, [currentMonth]);
+
+  const alinmaLeft = Math.max(0, alinmaSavings.total - alinmaSavings.payments.reduce((a, b) => a + b.amount, 0));
+  const monthlyTotal = goals2027.filter((g) => !g.done).reduce((a, b) => a + (b.monthly ?? 0), 0);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<"all" | Goal2027["area"]>("all");
 
@@ -59,6 +65,16 @@ function GoalsPage() {
           <div className="h-full rounded-full bg-white transition-all" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-3 text-[11px] opacity-90">باقي {daysLeft} يوم على نهاية 2027 — كل يوم يقربك ✨</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+          <div className="rounded-2xl bg-white/15 px-3 py-2">
+            <p className="opacity-90">ادخار الأحلام شهريًا</p>
+            <p className="text-sm font-bold">{formatSAR(monthlyTotal)}</p>
+          </div>
+          <div className="rounded-2xl bg-white/15 px-3 py-2">
+            <p className="opacity-90">متبقي على الإنماء</p>
+            <p className="text-sm font-bold">{formatSAR(alinmaLeft)}</p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -94,7 +110,14 @@ function GoalsPage() {
       <div className="mt-3 space-y-2">
         {list.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">ما فيه أهداف هنا بعد 🌷</p>}
         {list.map((g) => (
-          <GoalCard key={g.id} goal={g} onToggle={() => toggleGoal2027(g.id)} onRemove={() => removeGoal2027(g.id)} onSave={(n) => addToGoal2027(g.id, n)} />
+          <GoalCard
+            key={g.id}
+            goal={g}
+            onToggle={() => toggleGoal2027(g.id)}
+            onRemove={() => removeGoal2027(g.id)}
+            onSave={(n) => addToGoal2027(g.id, n)}
+            onUpdate={(patch) => updateGoal2027(g.id, patch)}
+          />
         ))}
       </div>
     </AppShell>
@@ -102,8 +125,8 @@ function GoalsPage() {
 }
 
 function GoalCard({
-  goal, onToggle, onRemove, onSave,
-}: { goal: Goal2027; onToggle: () => void; onRemove: () => void; onSave: (n: number) => void }) {
+  goal, onToggle, onRemove, onSave, onUpdate,
+}: { goal: Goal2027; onToggle: () => void; onRemove: () => void; onSave: (n: number) => void; onUpdate: (patch: Partial<Goal2027>) => void }) {
   const [amount, setAmount] = useState("");
   const saved = goal.saved ?? 0;
   const pct = goal.target ? Math.min(100, Math.round((saved / goal.target) * 100)) : 0;
@@ -152,6 +175,35 @@ function GoalCard({
                   ادخري 💗
                 </button>
               </div>
+
+              <div className="mt-3 border-t border-border/60 pt-2">
+                <p className="text-[11px] font-medium text-muted-foreground">المبلغ الشهري لهذا الحلم</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {[50, 100, 200, 300, 500].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => onUpdate({ monthly: goal.monthly === m ? 0 : m })}
+                      className={`rounded-full px-3 py-1 text-[11px] font-medium transition ${
+                        goal.monthly === m ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      }`}
+                    >{m}</button>
+                  ))}
+                </div>
+                <label className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={!!goal.fromAlinma}
+                    onChange={(e) => onUpdate({ fromAlinma: e.target.checked })}
+                    className="h-4 w-4 accent-[var(--primary)]"
+                  />
+                  اربطيه بادخار الإنماء 🏦
+                </label>
+                {(goal.monthly ?? 0) > 0 && goal.target ? (
+                  <p className="mt-1.5 text-[11px] text-primary">
+                    بهالمعدّل يتحقق خلال {Math.max(1, Math.ceil((goal.target - saved) / (goal.monthly ?? 1)))} شهر تقريبًا 💫
+                  </p>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>
@@ -170,6 +222,8 @@ function GoalForm({
   const [note, setNote] = useState("");
   const [target, setTarget] = useState("");
   const [icon, setIcon] = useState("💫");
+  const [monthly, setMonthly] = useState("");
+  const [fromAlinma, setFromAlinma] = useState(true);
   const [area, setArea] = useState<Goal2027["area"]>("حياة");
 
   return (
@@ -204,6 +258,11 @@ function GoalForm({
         </div>
       </div>
       <Input label="مبلغ الهدف (اختياري)" value={target} onChange={setTarget} type="number" placeholder="0" />
+      <Input label="المبلغ الشهري (اختياري)" value={monthly} onChange={setMonthly} type="number" placeholder="مثال: 200" />
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" checked={fromAlinma} onChange={(e) => setFromAlinma(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" />
+        اخصمي المبلغ الشهري من ادخار الإنماء 🏦
+      </label>
       <Input label="ملاحظة" value={note} onChange={setNote} placeholder="ليش هذا الحلم يهمك 💗" />
       <div className="flex gap-2 pt-1">
         <button
@@ -216,6 +275,8 @@ function GoalForm({
               note: note.trim() || undefined,
               target: Number(target) > 0 ? Number(target) : undefined,
               saved: Number(target) > 0 ? 0 : undefined,
+              monthly: Number(monthly) > 0 ? Number(monthly) : undefined,
+              fromAlinma,
             });
           }}
           className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
