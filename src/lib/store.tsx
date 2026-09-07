@@ -317,7 +317,9 @@ type Ctx = MonthData & {
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
   goals2027: Goal2027[];
-
+  budget: MonthBudget;
+  incomeForecast: { month: string; label: string; total: number; sources: IncomeSource[] }[];
+  autoFundGoals: () => void;
 
   setCurrentMonth: (m: string) => void;
   goPrevMonth: () => void;
