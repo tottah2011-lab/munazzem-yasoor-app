@@ -29,6 +29,8 @@ function PlannerPage() {
 
   return (
     <AppShell title="التخطيط الذكي ✨" subtitle={`خطة ${monthLabel(s.currentMonth)}`}>
+      <IncomeAndBudgetFrame />
+
       <ExtraIncomeSection />
 
       <RewardSection />
