@@ -219,8 +219,30 @@ export type Goal2027 = {
   note?: string;
   target?: number;
   saved?: number;
+  /** المبلغ الشهري المخصص لهذا الحلم */
+  monthly?: number;
+  /** يُخصم/يُتابع تلقائيًا من ادخار الإنماء */
+  fromAlinma?: boolean;
+  /** آخر شهر تم فيه إضافة المبلغ الشهري تلقائيًا YYYY-MM */
+  lastFunded?: string;
   done: boolean;
   doneDate?: string;
+};
+
+/** الميزانية الشهرية المحسوبة تلقائيًا */
+export type MonthBudget = {
+  expectedIncome: number;
+  receivedIncome: number;
+  extrasTotal: number;
+  installmentsMonthly: number;
+  commitmentsTotal: number;
+  emergencyTotal: number;
+  alinmaPaidThisMonth: number;
+  alinmaBorrowedThisMonth: number;
+  goalsMonthly: number;
+  totalOut: number;
+  remaining: number;
+  usedPct: number;
 };
 
 
