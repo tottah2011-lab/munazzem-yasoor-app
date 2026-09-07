@@ -1444,6 +1444,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeGoal2027: (id) =>
         setState((s) => ({ ...s, goals2027: (s.goals2027 ?? []).filter((x) => x.id !== id) })),
 
+      /** إضافة المبلغ الشهري لكل حلم تلقائيًا مرة واحدة في الشهر، مع ربطه بادخار الإنماء */
+      autoFundGoals: () =>
+        setState((s) => {
+          const month = s.currentMonth;
+          const today = new Date().toISOString().slice(0, 10);
+          const list = s.goals2027 ?? [];
+          let funded = 0;
+          let alinmaAmount = 0;
+          const goals2027 = list.map((g) => {
+            const monthly = g.monthly ?? 0;
+            if (g.done || monthly <= 0 || g.lastFunded === month) return g;
+            const saved = Math.min(g.target ?? Infinity, (g.saved ?? 0) + monthly);
+            funded += 1;
+            if (g.fromAlinma) alinmaAmount += monthly;
+            const reached = g.target ? saved >= g.target : false;
+            return {
+              ...g,
+              saved,
+              lastFunded: month,
+              done: reached ? true : g.done,
+              doneDate: reached ? today : g.doneDate,
+            };
+          });
+          if (funded === 0) return s;
+          const alinmaSavings =
+            alinmaAmount > 0
+              ? {
+                  ...s.alinmaSavings,
+                  payments: [
+                    { id: uid(), amount: alinmaAmount, date: today, note: `ادخار أحلام ${monthLabel(month)} 💫` },
+                    ...s.alinmaSavings.payments,
+                  ],
+                }
+              : s.alinmaSavings;
+          toast.success(`تم ادخار ${funded} حلم لهذا الشهر 💫`, {
+            description: alinmaAmount > 0 ? `منها ${alinmaAmount} ر.س من ادخار الإنماء 🏦` : undefined,
+          });
+          return { ...s, goals2027, alinmaSavings };
+        }),
+
+
       claimReward: (note) => {
         toast.success("مبروك! تستحقين هذي المكافأة 🎁✨", { description: note || "التزامك رائع هذا الشهر" });
         patchMonth({ rewardClaimed: true, rewardNote: note });
