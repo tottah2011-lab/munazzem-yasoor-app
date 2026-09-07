@@ -826,8 +826,59 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       (x) => !x.paid && (!x.installment || x.installment.monthsPaid < x.installment.monthsTotal),
     );
 
+    // ===== الميزانية الشهرية المحسوبة تلقائيًا =====
+    const goalsList = state.goals2027 ?? [];
+    const expectedIncome = cm.incomeSources.reduce((a, b) => a + b.amount, 0);
+    const receivedIncome = cm.incomeSources.filter((x) => x.received).reduce((a, b) => a + b.amount, 0);
+    const installmentsMonthly = cm.urgent
+      .filter((x) => x.installment && x.installment.monthsTotal > 0)
+      .reduce((a, b) => a + b.amount, 0);
+    const commitmentsTotal = cm.urgent
+      .filter((x) => !x.installment || x.installment.monthsTotal === 0)
+      .reduce((a, b) => a + b.amount, 0);
+    const emergencyTotal = cm.dailyExpenses.reduce((a, b) => a + b.amount, 0);
+    const inMonth = (d?: string) => (d ?? "").slice(0, 7) === state.currentMonth;
+    const alinmaPaidThisMonth = state.alinmaSavings.payments
+      .filter((p) => inMonth(p.date))
+      .reduce((a, b) => a + b.amount, 0);
+    const alinmaBorrowedThisMonth = (state.alinmaSavings.borrows ?? [])
+      .filter((b) => inMonth(b.date))
+      .reduce((a, b) => a + b.amount, 0);
+    const goalsMonthly = goalsList
+      .filter((g) => !g.done && (g.monthly ?? 0) > 0)
+      .reduce((a, b) => a + (b.monthly ?? 0), 0);
+    const totalOut = installmentsMonthly + commitmentsTotal + emergencyTotal + alinmaPaidThisMonth + goalsMonthly;
+    const budget: MonthBudget = {
+      expectedIncome,
+      receivedIncome,
+      extrasTotal,
+      installmentsMonthly,
+      commitmentsTotal,
+      emergencyTotal,
+      alinmaPaidThisMonth,
+      alinmaBorrowedThisMonth,
+      goalsMonthly,
+      totalOut,
+      remaining: totalIncome - totalOut,
+      usedPct: Math.min(100, Math.round((totalOut / Math.max(totalIncome, 1)) * 100)),
+    };
+
+    // توقعات الدخل للأشهر القادمة (نفس المصادر: الضمان 1 وحساب المواطن 10)
+    const incomeForecast = [0, 1, 2, 3].map((i) => {
+      const key = shiftMonth(state.currentMonth, i);
+      const sources = state.months[key]?.incomeSources ?? cm.incomeSources;
+      return {
+        month: key,
+        label: monthLabel(key),
+        total: sources.reduce((a, b) => a + b.amount, 0),
+        sources,
+      };
+    });
+
     return {
       ...cm,
+      budget,
+      incomeForecast,
       currentMonth: state.currentMonth,
       months: state.months,
       monthKeys: Object.keys(state.months).sort(),
