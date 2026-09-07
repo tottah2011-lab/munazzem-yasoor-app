@@ -219,8 +219,30 @@ export type Goal2027 = {
   note?: string;
   target?: number;
   saved?: number;
+  /** المبلغ الشهري المخصص لهذا الحلم */
+  monthly?: number;
+  /** يُخصم/يُتابع تلقائيًا من ادخار الإنماء */
+  fromAlinma?: boolean;
+  /** آخر شهر تم فيه إضافة المبلغ الشهري تلقائيًا YYYY-MM */
+  lastFunded?: string;
   done: boolean;
   doneDate?: string;
+};
+
+/** الميزانية الشهرية المحسوبة تلقائيًا */
+export type MonthBudget = {
+  expectedIncome: number;
+  receivedIncome: number;
+  extrasTotal: number;
+  installmentsMonthly: number;
+  commitmentsTotal: number;
+  emergencyTotal: number;
+  alinmaPaidThisMonth: number;
+  alinmaBorrowedThisMonth: number;
+  goalsMonthly: number;
+  totalOut: number;
+  remaining: number;
+  usedPct: number;
 };
 
 
@@ -295,7 +317,9 @@ type Ctx = MonthData & {
   savings: SavingsGoal[];
   alinmaSavings: AlinmaSavings;
   goals2027: Goal2027[];
-
+  budget: MonthBudget;
+  incomeForecast: { month: string; label: string; total: number; sources: IncomeSource[] }[];
+  autoFundGoals: () => void;
 
   setCurrentMonth: (m: string) => void;
   goPrevMonth: () => void;
@@ -802,8 +826,59 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       (x) => !x.paid && (!x.installment || x.installment.monthsPaid < x.installment.monthsTotal),
     );
 
+    // ===== الميزانية الشهرية المحسوبة تلقائيًا =====
+    const goalsList = state.goals2027 ?? [];
+    const expectedIncome = cm.incomeSources.reduce((a, b) => a + b.amount, 0);
+    const receivedIncome = cm.incomeSources.filter((x) => x.received).reduce((a, b) => a + b.amount, 0);
+    const installmentsMonthly = cm.urgent
+      .filter((x) => x.installment && x.installment.monthsTotal > 0)
+      .reduce((a, b) => a + b.amount, 0);
+    const commitmentsTotal = cm.urgent
+      .filter((x) => !x.installment || x.installment.monthsTotal === 0)
+      .reduce((a, b) => a + b.amount, 0);
+    const emergencyTotal = cm.dailyExpenses.reduce((a, b) => a + b.amount, 0);
+    const inMonth = (d?: string) => (d ?? "").slice(0, 7) === state.currentMonth;
+    const alinmaPaidThisMonth = state.alinmaSavings.payments
+      .filter((p) => inMonth(p.date))
+      .reduce((a, b) => a + b.amount, 0);
+    const alinmaBorrowedThisMonth = (state.alinmaSavings.borrows ?? [])
+      .filter((b) => inMonth(b.date))
+      .reduce((a, b) => a + b.amount, 0);
+    const goalsMonthly = goalsList
+      .filter((g) => !g.done && (g.monthly ?? 0) > 0)
+      .reduce((a, b) => a + (b.monthly ?? 0), 0);
+    const totalOut = installmentsMonthly + commitmentsTotal + emergencyTotal + alinmaPaidThisMonth + goalsMonthly;
+    const budget: MonthBudget = {
+      expectedIncome,
+      receivedIncome,
+      extrasTotal,
+      installmentsMonthly,
+      commitmentsTotal,
+      emergencyTotal,
+      alinmaPaidThisMonth,
+      alinmaBorrowedThisMonth,
+      goalsMonthly,
+      totalOut,
+      remaining: totalIncome - totalOut,
+      usedPct: Math.min(100, Math.round((totalOut / Math.max(totalIncome, 1)) * 100)),
+    };
+
+    // توقعات الدخل للأشهر القادمة (نفس المصادر: الضمان 1 وحساب المواطن 10)
+    const incomeForecast = [0, 1, 2, 3].map((i) => {
+      const key = shiftMonth(state.currentMonth, i);
+      const sources = state.months[key]?.incomeSources ?? cm.incomeSources;
+      return {
+        month: key,
+        label: monthLabel(key),
+        total: sources.reduce((a, b) => a + b.amount, 0),
+        sources,
+      };
+    });
+
     return {
       ...cm,
+      budget,
+      incomeForecast,
       currentMonth: state.currentMonth,
       months: state.months,
       monthKeys: Object.keys(state.months).sort(),
@@ -1368,6 +1443,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
       removeGoal2027: (id) =>
         setState((s) => ({ ...s, goals2027: (s.goals2027 ?? []).filter((x) => x.id !== id) })),
+
+      /** إضافة المبلغ الشهري لكل حلم تلقائيًا مرة واحدة في الشهر، مع ربطه بادخار الإنماء */
+      autoFundGoals: () =>
+        setState((s) => {
+          const month = s.currentMonth;
+          const today = new Date().toISOString().slice(0, 10);
+          const list = s.goals2027 ?? [];
+          let funded = 0;
+          let alinmaAmount = 0;
+          const goals2027 = list.map((g) => {
+            const monthly = g.monthly ?? 0;
+            if (g.done || monthly <= 0 || g.lastFunded === month) return g;
+            const saved = Math.min(g.target ?? Infinity, (g.saved ?? 0) + monthly);
+            funded += 1;
+            if (g.fromAlinma) alinmaAmount += monthly;
+            const reached = g.target ? saved >= g.target : false;
+            return {
+              ...g,
+              saved,
+              lastFunded: month,
+              done: reached ? true : g.done,
+              doneDate: reached ? today : g.doneDate,
+            };
+          });
+          if (funded === 0) return s;
+          const alinmaSavings =
+            alinmaAmount > 0
+              ? {
+                  ...s.alinmaSavings,
+                  payments: [
+                    { id: uid(), amount: alinmaAmount, date: today, note: `ادخار أحلام ${monthLabel(month)} 💫` },
+                    ...s.alinmaSavings.payments,
+                  ],
+                }
+              : s.alinmaSavings;
+          toast.success(`تم ادخار ${funded} حلم لهذا الشهر 💫`, {
+            description: alinmaAmount > 0 ? `منها ${alinmaAmount} ر.س من ادخار الإنماء 🏦` : undefined,
+          });
+          return { ...s, goals2027, alinmaSavings };
+        }),
+
 
       claimReward: (note) => {
         toast.success("مبروك! تستحقين هذي المكافأة 🎁✨", { description: note || "التزامك رائع هذا الشهر" });

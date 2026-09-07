@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarPlus, ClipboardList, Gift, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Trash2, TrendingUp } from "lucide-react";
+import { CalendarPlus, ClipboardList, Gift, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
@@ -29,6 +29,8 @@ function PlannerPage() {
 
   return (
     <AppShell title="التخطيط الذكي ✨" subtitle={`خطة ${monthLabel(s.currentMonth)}`}>
+      <IncomeAndBudgetFrame />
+
       <ExtraIncomeSection />
 
       <RewardSection />
@@ -47,6 +49,119 @@ function PlannerPage() {
     </AppShell>
   );
 }
+
+/** 💗 إطار واحد: دخلي الحقيقي + توقعاته + الميزانية التلقائية */
+function IncomeAndBudgetFrame() {
+  const {
+    incomeSources, toggleIncomeReceived, budget, incomeForecast, alinmaSavings, currentMonth,
+  } = useStore();
+
+  const withdrawals = (alinmaSavings.borrows ?? []).filter((b) => b.date.slice(0, 7) === currentMonth);
+  const withdrawalsTotal = withdrawals.reduce((a, b) => a + b.amount, 0);
+  const remainingTone = budget.remaining < 0 ? "text-destructive" : budget.remaining < budget.expectedIncome * 0.25 ? "text-warning" : "text-success";
+
+  return (
+    <Card className="space-y-4 border-primary/25">
+      <div className="flex items-center gap-2">
+        <span className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-primary-foreground">
+          <Wallet className="h-4 w-4" />
+        </span>
+        <div>
+          <p className="text-sm font-bold">دخلي وميزانيتي — {monthLabel(currentMonth)}</p>
+          <p className="text-[11px] text-muted-foreground">محسوبة تلقائيًا من رواتبك ومصاريفك 💫</p>
+        </div>
+      </div>
+
+      {/* مصادر الدخل الحقيقية */}
+      <div className="space-y-2">
+        {incomeSources.map((src) => (
+          <button
+            key={src.id}
+            onClick={() => toggleIncomeReceived(src.id)}
+            className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-right transition ${
+              src.received ? "border-success/40 bg-success/10" : "border-border bg-muted/30"
+            }`}
+          >
+            <span className="text-lg">{src.emoji ?? "💵"}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{src.name}</p>
+              <p className="text-[11px] text-muted-foreground">ينزل يوم {src.day} من كل شهر ميلادي</p>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold">{formatSAR(src.amount)}</p>
+              <p className={`text-[10px] ${src.received ? "text-success" : "text-muted-foreground"}`}>
+                {src.received ? "استُلم ✓" : "بانتظار النزول"}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* الميزانية التلقائية */}
+      <div className="rounded-2xl bg-muted/40 p-3">
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <Row label="الدخل المتوقع" value={formatSAR(budget.expectedIncome)} />
+          <Row label="المستلم فعليًا" value={formatSAR(budget.receivedIncome)} tone="text-success" />
+          <Row label="التقسيط" value={formatSAR(budget.installmentsMonthly)} />
+          <Row label="الالتزامات" value={formatSAR(budget.commitmentsTotal)} />
+          <Row label="صرف طارئ" value={formatSAR(budget.emergencyTotal)} tone="text-warning" />
+          <Row label="سداد الإنماء" value={formatSAR(budget.alinmaPaidThisMonth)} />
+          <Row label="ادخار الأحلام" value={formatSAR(budget.goalsMonthly)} tone="text-info" />
+          <Row label="سحوبات الإنماء" value={formatSAR(withdrawalsTotal)} tone="text-destructive" />
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full transition-all ${budget.remaining < 0 ? "bg-destructive" : "gradient-primary"}`}
+            style={{ width: `${budget.usedPct}%` }}
+          />
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">المتبقي من دخلك</span>
+          <span className={`text-base font-black ${remainingTone}`}>{formatSAR(budget.remaining)}</span>
+        </div>
+      </div>
+
+      {/* توقعات الأشهر القادمة */}
+      <div>
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">توقع الدخل للأشهر القادمة 🔮</p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {incomeForecast.map((f) => (
+            <div key={f.month} className="min-w-[110px] shrink-0 rounded-2xl bg-primary/10 p-3 text-center">
+              <p className="text-[11px] text-muted-foreground">{f.label}</p>
+              <p className="mt-1 text-sm font-bold text-primary">{formatSAR(f.total)}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">{f.sources.length} مصادر</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* سحوبات الإنماء لهذا الشهر */}
+      {withdrawals.length > 0 && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-xs font-semibold text-destructive">سحوبات ادخار الإنماء هذا الشهر</p>
+          <div className="mt-2 space-y-1">
+            {withdrawals.map((b) => (
+              <div key={b.id} className="flex items-center justify-between text-[11px]">
+                <span className="truncate text-muted-foreground">{b.reason} · {b.date}</span>
+                <span className="font-bold">{formatSAR(b.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function Row({ label, value, tone = "" }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="rounded-xl bg-card px-3 py-2">
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className={`text-xs font-bold ${tone}`}>{value}</p>
+    </div>
+  );
+}
+
 
 function ExtraIncomeSection() {
   const { extraIncome, addExtraIncome, removeExtraIncome, income, totalIncome } = useStore();
