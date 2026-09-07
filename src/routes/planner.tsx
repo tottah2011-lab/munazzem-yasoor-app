@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarPlus, ClipboardList, Gift, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Trash2, TrendingUp } from "lucide-react";
+import { CalendarPlus, ClipboardList, Gift, PiggyBank, Plus, RotateCcw, ShoppingBag, Sparkles, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
