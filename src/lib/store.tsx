@@ -1536,7 +1536,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       unclaimReward: () => patchMonth({ rewardClaimed: false, rewardNote: undefined }),
     };
-  }, [state]);
+  }, [state, today]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
