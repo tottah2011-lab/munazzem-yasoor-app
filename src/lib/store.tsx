@@ -874,10 +874,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const goalsMonthly = goalsList
       .filter((g) => !g.done && (g.monthly ?? 0) > 0)
       .reduce((a, b) => a + (b.monthly ?? 0), 0);
+    // ملاحظة: الدخل الإضافي/العمل الحر لا يدخل في الدخل ولا في المصاريف — يُحسب ادخارًا منفصلًا
     const totalOut = installmentsMonthly + commitmentsTotal + emergencyTotal + alinmaPaidThisMonth + goalsMonthly;
+
+    // حسابات مرتبطة بتاريخ اليوم (تتحدث تلقائيًا كل يوم)
+    const [yy, mm] = state.currentMonth.split("-").map(Number);
+    const daysInMonth = new Date(yy, mm, 0).getDate();
+    const isRunningMonth = today.slice(0, 7) === state.currentMonth;
+    const dayOfMonth = isRunningMonth ? Number(today.slice(8, 10)) : today > state.currentMonth ? daysInMonth : 0;
+    const daysLeft = Math.max(1, daysInMonth - dayOfMonth);
+    const arrivedIncome = cm.incomeSources
+      .filter((s) => s.received || dayOfMonth >= s.day)
+      .reduce((a, b) => a + b.amount, 0);
+    const remaining = totalIncome - totalOut;
+
     const budget: MonthBudget = {
       expectedIncome,
       receivedIncome,
+      arrivedIncome,
       extrasTotal,
       installmentsMonthly,
       commitmentsTotal,
@@ -886,9 +900,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       alinmaBorrowedThisMonth,
       goalsMonthly,
       totalOut,
-      remaining: totalIncome - totalOut,
+      remaining,
       usedPct: Math.min(100, Math.round((totalOut / Math.max(totalIncome, 1)) * 100)),
+      daysLeft,
+      dailyAllowance: Math.max(0, Math.round(remaining / daysLeft)),
+      updatedAt: today,
     };
+
 
     // توقعات الدخل للأشهر القادمة (نفس المصادر: الضمان 1 وحساب المواطن 10)
     const incomeForecast = [0, 1, 2, 3].map((i) => {
