@@ -797,11 +797,29 @@ const StoreContext = createContext<Ctx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaultState);
   const [hydrated, setHydrated] = useState(false);
+  // تاريخ اليوم — يتحدث تلقائيًا كل يوم أو عند العودة للتطبيق فتُعاد الميزانية حسابها
+  const [today, setToday] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     setState(loadState());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    const tick = () => setToday((t) => {
+      const now = new Date().toISOString().slice(0, 10);
+      return now === t ? t : now;
+    });
+    const id = window.setInterval(tick, 60_000);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
+  }, []);
+
 
   useEffect(() => {
     if (!hydrated) return;
