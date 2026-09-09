@@ -233,6 +233,8 @@ export type Goal2027 = {
 export type MonthBudget = {
   expectedIncome: number;
   receivedIncome: number;
+  /** الدخل الذي حان موعد نزوله حتى تاريخ اليوم */
+  arrivedIncome: number;
   extrasTotal: number;
   installmentsMonthly: number;
   commitmentsTotal: number;
@@ -243,7 +245,14 @@ export type MonthBudget = {
   totalOut: number;
   remaining: number;
   usedPct: number;
+  /** الأيام المتبقية في الشهر */
+  daysLeft: number;
+  /** المسموح صرفه يوميًا لباقي الشهر */
+  dailyAllowance: number;
+  /** تاريخ آخر تحديث تلقائي YYYY-MM-DD */
+  updatedAt: string;
 };
+
 
 
 
@@ -788,11 +797,29 @@ const StoreContext = createContext<Ctx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaultState);
   const [hydrated, setHydrated] = useState(false);
+  // تاريخ اليوم — يتحدث تلقائيًا كل يوم أو عند العودة للتطبيق فتُعاد الميزانية حسابها
+  const [today, setToday] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     setState(loadState());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    const tick = () => setToday((t) => {
+      const now = new Date().toISOString().slice(0, 10);
+      return now === t ? t : now;
+    });
+    const id = window.setInterval(tick, 60_000);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
+  }, []);
+
 
   useEffect(() => {
     if (!hydrated) return;
@@ -847,10 +874,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const goalsMonthly = goalsList
       .filter((g) => !g.done && (g.monthly ?? 0) > 0)
       .reduce((a, b) => a + (b.monthly ?? 0), 0);
+    // ملاحظة: الدخل الإضافي/العمل الحر لا يدخل في الدخل ولا في المصاريف — يُحسب ادخارًا منفصلًا
     const totalOut = installmentsMonthly + commitmentsTotal + emergencyTotal + alinmaPaidThisMonth + goalsMonthly;
+
+    // حسابات مرتبطة بتاريخ اليوم (تتحدث تلقائيًا كل يوم)
+    const [yy, mm] = state.currentMonth.split("-").map(Number);
+    const daysInMonth = new Date(yy, mm, 0).getDate();
+    const isRunningMonth = today.slice(0, 7) === state.currentMonth;
+    const dayOfMonth = isRunningMonth ? Number(today.slice(8, 10)) : today > state.currentMonth ? daysInMonth : 0;
+    const daysLeft = Math.max(1, daysInMonth - dayOfMonth);
+    const arrivedIncome = cm.incomeSources
+      .filter((s) => s.received || dayOfMonth >= s.day)
+      .reduce((a, b) => a + b.amount, 0);
+    const remaining = totalIncome - totalOut;
+
     const budget: MonthBudget = {
       expectedIncome,
       receivedIncome,
+      arrivedIncome,
       extrasTotal,
       installmentsMonthly,
       commitmentsTotal,
@@ -859,9 +900,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       alinmaBorrowedThisMonth,
       goalsMonthly,
       totalOut,
-      remaining: totalIncome - totalOut,
+      remaining,
       usedPct: Math.min(100, Math.round((totalOut / Math.max(totalIncome, 1)) * 100)),
+      daysLeft,
+      dailyAllowance: Math.max(0, Math.round(remaining / daysLeft)),
+      updatedAt: today,
     };
+
 
     // توقعات الدخل للأشهر القادمة (نفس المصادر: الضمان 1 وحساب المواطن 10)
     const incomeForecast = [0, 1, 2, 3].map((i) => {
@@ -1491,7 +1536,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       unclaimReward: () => patchMonth({ rewardClaimed: false, rewardNote: undefined }),
     };
-  }, [state]);
+  }, [state, today]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

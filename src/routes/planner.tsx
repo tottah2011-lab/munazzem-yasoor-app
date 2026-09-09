@@ -68,7 +68,8 @@ function IncomeAndBudgetFrame() {
         </span>
         <div>
           <p className="text-sm font-bold">دخلي وميزانيتي — {monthLabel(currentMonth)}</p>
-          <p className="text-[11px] text-muted-foreground">محسوبة تلقائيًا من رواتبك ومصاريفك 💫</p>
+          <p className="text-[11px] text-muted-foreground">تتحدث تلقائيًا كل يوم · آخر تحديث {budget.updatedAt} ✨</p>
+
         </div>
       </div>
 
@@ -101,6 +102,7 @@ function IncomeAndBudgetFrame() {
       <div className="rounded-2xl bg-muted/40 p-3">
         <div className="grid grid-cols-2 gap-2 text-[11px]">
           <Row label="الدخل المتوقع" value={formatSAR(budget.expectedIncome)} />
+          <Row label="نزل حتى اليوم" value={formatSAR(budget.arrivedIncome)} tone="text-success" />
           <Row label="المستلم فعليًا" value={formatSAR(budget.receivedIncome)} tone="text-success" />
           <Row label="التقسيط" value={formatSAR(budget.installmentsMonthly)} />
           <Row label="الالتزامات" value={formatSAR(budget.commitmentsTotal)} />
@@ -119,7 +121,21 @@ function IncomeAndBudgetFrame() {
           <span className="text-xs text-muted-foreground">المتبقي من دخلك</span>
           <span className={`text-base font-black ${remainingTone}`}>{formatSAR(budget.remaining)}</span>
         </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-primary/10 p-2 text-center">
+            <p className="text-[10px] text-muted-foreground">مسموح لك يوميًا</p>
+            <p className="text-sm font-bold text-primary">{formatSAR(budget.dailyAllowance)}</p>
+          </div>
+          <div className="rounded-2xl bg-info/10 p-2 text-center">
+            <p className="text-[10px] text-muted-foreground">باقي على نهاية الشهر</p>
+            <p className="text-sm font-bold text-info">{budget.daysLeft} يوم</p>
+          </div>
+        </div>
+        <p className="mt-2 rounded-xl bg-success/10 p-2 text-center text-[10px] text-success">
+          المبالغ الإضافية والعمل الحر ({formatSAR(budget.extrasTotal)}) ادخار منفصل ولا تُحتسب ضمن المصاريف 💚
+        </p>
       </div>
+
 
       {/* توقعات الأشهر القادمة */}
       <div>
