@@ -792,7 +792,10 @@ function loadState(): State {
 
 }
 
-const StoreContext = createContext<Ctx | null>(null);
+// نحتفظ بالسياق على مستوى النافذة حتى لا ينكسر مع التحديث الحي (HMR)
+const g = globalThis as unknown as { __storeCtx?: React.Context<Ctx | null> };
+const StoreContext = g.__storeCtx ?? createContext<Ctx | null>(null);
+g.__storeCtx = StoreContext;
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaultState);
