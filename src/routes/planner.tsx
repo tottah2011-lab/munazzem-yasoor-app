@@ -68,7 +68,8 @@ function IncomeAndBudgetFrame() {
         </span>
         <div>
           <p className="text-sm font-bold">دخلي وميزانيتي — {monthLabel(currentMonth)}</p>
-          <p className="text-[11px] text-muted-foreground">محسوبة تلقائيًا من رواتبك ومصاريفك 💫</p>
+          <p className="text-[11px] text-muted-foreground">تتحدث تلقائيًا كل يوم · آخر تحديث {budget.updatedAt} ✨</p>
+
         </div>
       </div>
 
