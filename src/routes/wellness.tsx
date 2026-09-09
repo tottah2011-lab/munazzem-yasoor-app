@@ -53,6 +53,8 @@ const isDoneOn = (i: WellnessItem, date: string) => {
   return dates.filter((d) => inWeekOf(d, date)).length >= freqTarget(f);
 };
 
+type TabKey = "care" | "health" | "work" | "soul";
+
 function Wellness() {
   const {
     wellness, setDailyMetrics, toggleWellnessItem, addWellnessItem, renameWellnessItem, removeWellnessItem,
