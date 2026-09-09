@@ -103,6 +103,25 @@ function Wellness() {
     onRemove: removeWellnessItem,
   };
 
+  const [tab, setTab] = useState<TabKey>("care");
+
+  const listScore = (keys: WellnessListKey[]) => {
+    let total = 0, done = 0;
+    for (const k of keys)
+      for (const it of wellness[k] ?? []) {
+        total++;
+        if (isDoneOn(it, date)) done++;
+      }
+    return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
+  };
+
+  const tabs: { key: TabKey; label: string; emoji: string; keys: WellnessListKey[]; grad: string; ring: string }[] = [
+    { key: "care", label: "عنايتي", emoji: "🌸", keys: ["skinCare", "hairCare", "skinWeekly", "hairWeekly", "vitamins"], grad: "from-pink-400 to-rose-300", ring: "#f472b6" },
+    { key: "health", label: "صحتي", emoji: "🌿", keys: ["workouts", "meals"], grad: "from-emerald-400 to-teal-300", ring: "#34d399" },
+    { key: "work", label: "إنجازي", emoji: "🚀", keys: ["onlineWork", "worship", "selfDev"], grad: "from-violet-400 to-indigo-300", ring: "#a78bfa" },
+    { key: "soul", label: "نفسيتي", emoji: "💗", keys: ["concerns"], grad: "from-amber-300 to-orange-300", ring: "#fbbf24" },
+  ];
+
   return (
     <AppShell title="عنايتي 🌸" subtitle="كل يوم بتاريخه — وكل إنجازاتك بمكان واحد">
       {/* شريط التاريخ */}
