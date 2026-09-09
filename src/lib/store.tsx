@@ -233,6 +233,8 @@ export type Goal2027 = {
 export type MonthBudget = {
   expectedIncome: number;
   receivedIncome: number;
+  /** الدخل الذي حان موعد نزوله حتى تاريخ اليوم */
+  arrivedIncome: number;
   extrasTotal: number;
   installmentsMonthly: number;
   commitmentsTotal: number;
@@ -243,7 +245,14 @@ export type MonthBudget = {
   totalOut: number;
   remaining: number;
   usedPct: number;
+  /** الأيام المتبقية في الشهر */
+  daysLeft: number;
+  /** المسموح صرفه يوميًا لباقي الشهر */
+  dailyAllowance: number;
+  /** تاريخ آخر تحديث تلقائي YYYY-MM-DD */
+  updatedAt: string;
 };
+
 
 
 
