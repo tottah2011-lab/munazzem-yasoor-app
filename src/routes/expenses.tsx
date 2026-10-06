@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  AlertTriangle, Banknote, CalendarClock, CalendarX2, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
-  Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet, Zap,
-} from "lucide-react";
+import { AlertTriangle, Banknote, CalendarClock, CalendarX2, Check, Plus, Search, Trash2 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
+import {
+  ExtraIncomeSection, IncomeAndBudgetFrame, MonthlyPlanSection, RewardSection, SurplusSection,
+} from "@/components/planSections";
+
 
 
 export const Route = createFileRoute("/expenses")({
@@ -207,14 +208,8 @@ function InstallmentSection({
           return (
             <Card key={e.id} className={closed ? "bg-muted/60 opacity-80 grayscale" : ""}>
               <div className="flex items-center gap-3">
-                <div
-                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
-                    closed ? "bg-muted text-muted-foreground" : "bg-info/15 text-info"
-                  }`}
-                >
-                  <CalendarClock className="h-5 w-5" />
-                </div>
                 <div className="min-w-0 flex-1">
+
                   <div className="flex items-center justify-between gap-2">
                     <p className={`truncate font-semibold ${closed ? "text-muted-foreground line-through" : ""}`}>{e.name}</p>
                     <p className={`shrink-0 font-bold ${closed ? "text-muted-foreground" : ""}`}>
@@ -711,89 +706,6 @@ function WishlistSection({
 }
 
 
-/* ---------------- Debts ---------------- */
-
-function DebtsSection({
-  showForm, setShowForm, paidTotal,
-}: { showForm: boolean; setShowForm: (v: boolean) => void; paidTotal: number }) {
-  const { debts, addDebt, payDebt, removeDebt } = useStore();
-  const [creditor, setCreditor] = useState("");
-  const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
-
-  const unpaid = debts.filter((d) => !d.paid);
-  const paid = debts.filter((d) => d.paid);
-
-  return (
-    <>
-      {showForm && (
-        <Card className="mt-4 space-y-3">
-          <Input label="الدائن" value={creditor} onChange={setCreditor} placeholder="اسم الشخص أو الجهة" />
-          <Input label="المبلغ" value={amount} onChange={setAmount} type="number" placeholder="0" />
-          <Input label="تاريخ الاستحقاق" value={dueDate} onChange={setDueDate} type="date" />
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => {
-                if (!creditor || !amount) return;
-                addDebt({ creditor, amount: Number(amount), dueDate });
-                setCreditor(""); setAmount(""); setShowForm(false);
-              }}
-              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
-            >حفظ</button>
-            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
-          </div>
-        </Card>
-      )}
-
-      <SectionTitle>غير مسددة</SectionTitle>
-      <div className="space-y-2">
-        {unpaid.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لا توجد ديون مستحقة 🎉</p>}
-        {unpaid.map((d) => (
-          <Card key={d.id} className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate font-semibold">{d.creditor}</p>
-                <p className="shrink-0 font-bold text-destructive">{formatSAR(d.amount)}</p>
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">يستحق {d.dueDate}</p>
-            </div>
-            <button
-              onClick={() => payDebt(d.id)}
-              className="shrink-0 rounded-full bg-success/15 px-3 py-1.5 text-xs font-semibold text-success hover:bg-success/25"
-            >
-              تم السداد
-            </button>
-            <button onClick={() => removeDebt(d.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </Card>
-        ))}
-      </div>
-
-      <SectionTitle>مسددة ({formatSAR(paidTotal)})</SectionTitle>
-      <div className="space-y-2">
-        {paid.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لم تسددي أي ديون بعد.</p>}
-        {paid.map((d) => (
-          <Card key={d.id} className="flex items-center gap-3 opacity-90">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success text-success-foreground">
-              <Check className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate font-semibold">{d.creditor}</p>
-                <p className="shrink-0 font-bold">{formatSAR(d.amount)}</p>
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">تم الدفع في {d.paidDate}</p>
-            </div>
-            <button onClick={() => removeDebt(d.id)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="حذف">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </Card>
-        ))}
-      </div>
-    </>
-  );
-}
 
 /* ---------------- Emergency / Urgent spending ---------------- */
 
@@ -936,11 +848,6 @@ function DailySection({
                       e.mistake ? "border border-destructive/30 bg-destructive/5" : ""
                     }`}
                   >
-                    <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
-                      e.mistake ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"
-                    }`}>
-                      {e.mistake ? <AlertTriangle className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
-                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate font-semibold">{e.name}</p>
@@ -1012,10 +919,8 @@ function AlinmaSection({
       }`}>
         <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
         <div className="absolute -bottom-10 -right-6 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
-        <div className="flex items-center gap-2 text-xs opacity-90">
-          <Landmark className="h-4 w-4" />
-          <span>ادخار الإنماء — سداد المقترض منه</span>
-        </div>
+        <p className="text-xs opacity-90">ادخار الإنماء — سداد المقترض منه</p>
+
         <p className="mt-2 text-xs opacity-80">المبلغ المتبقي عليكِ</p>
         <p className="mt-1 text-4xl font-black tracking-tight">{formatSAR(left)}</p>
         <div className="mt-3">
@@ -1122,10 +1027,8 @@ function AlinmaSection({
 
       {alinmaSavings.total === 0 && !showForm && !editTotal && (
         <Card className="mt-4 flex items-start gap-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-info/10 text-info">
-            <Landmark className="h-5 w-5" />
-          </div>
           <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
+
             حدّدي أول شي كم المبلغ اللي سحبتيه من ادخارك، وبعدها سجّلي كل سداد وشوفي تقدمك 💚
           </p>
         </Card>
