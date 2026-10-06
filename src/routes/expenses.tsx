@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  AlertTriangle, Banknote, CalendarClock, CalendarX2, Check, HandCoins, Heart, Landmark, Minus, PiggyBank,
-  Plus, Search, ShoppingBag, Sparkles, Sun, Target, Trash2, Wallet, Zap,
-} from "lucide-react";
+import { AlertTriangle, Banknote, CalendarClock, CalendarX2, Check, Plus, Search, Trash2 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
 import { Input } from "./urgent";
+import {
+  ExtraIncomeSection, IncomeAndBudgetFrame, MonthlyPlanSection, RewardSection, SurplusSection,
+} from "@/components/planSections";
+
 
 
 export const Route = createFileRoute("/expenses")({
