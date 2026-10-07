@@ -130,7 +130,7 @@ function Wellness() {
       }
     return { done, target, pct: target ? Math.round((done / target) * 100) : 0 };
   };
-  const wkFrom = weekStart();
+  const wkFrom = weekStartOf(today);
   const moFrom = today.slice(0, 8) + "01";
   const autoGoals = [
     { label: "تمارين الأسبوع 🏋️‍♀️", ...periodScore(["workouts"], wkFrom) },

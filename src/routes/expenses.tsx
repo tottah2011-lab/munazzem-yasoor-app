@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Banknote, CalendarClock, CalendarX2, Check, Plus, Search, Trash2 } from "lucide-react";
 import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { formatSAR, monthLabel, useStore } from "@/lib/store";
@@ -59,12 +59,12 @@ function ExpensesPage() {
           ? "خذي نفس عميق 💗 وحاولي تقللين المصاريف الغلط بكرة"
           : "خطوة خطوة، ميزانيتك في تحسّن مستمر ✨";
 
-  const tabs: { key: Tab; label: string; icon: typeof Wallet; count: number; hint: string }[] = [
-    { key: "installment", label: "تقسيط", icon: CalendarClock, count: installments.length, hint: `${formatSAR(installmentMonthly)}/شهر` },
-    { key: "commitments", label: "التزامات شهرية", icon: Wallet, count: commitments.length, hint: formatSAR(commitmentsUnpaid) },
-    { key: "daily", label: "صرف طارئ", icon: Zap, count: s.dailyExpenses.length, hint: formatSAR(dailyTotal) },
-    { key: "wishlist", label: "أشياء أبغي اشتريها", icon: ShoppingBag, count: s.postponable.length, hint: formatSAR(wishlistTotal) },
-    { key: "alinma", label: "ادخار الإنماء", icon: Landmark, count: s.alinmaSavings.payments.length, hint: formatSAR(alinmaLeft) },
+  const tabs: { key: Tab; label: string; count: number; hint: string }[] = [
+    { key: "installment", label: "تقسيط", count: installments.length, hint: `${formatSAR(installmentMonthly)}/شهر` },
+    { key: "commitments", label: "التزامات شهرية", count: commitments.length, hint: formatSAR(commitmentsUnpaid) },
+    { key: "daily", label: "صرف طارئ", count: s.dailyExpenses.length, hint: formatSAR(dailyTotal) },
+    { key: "wishlist", label: "أشياء أبغي اشتريها", count: s.postponable.length, hint: formatSAR(wishlistTotal) },
+    { key: "alinma", label: "ادخار الإنماء", count: s.alinmaSavings.payments.length, hint: formatSAR(alinmaLeft) },
   ];
 
   const addLabel: Record<Tab, string> = {
@@ -103,9 +103,6 @@ function ExpensesPage() {
       </Card>
 
       <Card className="mt-3 flex items-center gap-3 border border-success/20 bg-success/5">
-        <div className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
-          <Sparkles className="h-5 w-5" />
-        </div>
         <p className="text-sm font-medium leading-relaxed">{encourage}</p>
       </Card>
 
@@ -137,7 +134,6 @@ function ExpensesPage() {
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
         {tabs.map((t) => {
           const active = tab === t.key;
-          const Icon = t.icon;
           return (
             <button
               key={t.key}
@@ -148,7 +144,6 @@ function ExpensesPage() {
                   : "glass text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon className="h-5 w-5" />
               <span className="text-[11px] font-semibold whitespace-nowrap">{t.label}</span>
               <span className={`text-[10px] ${active ? "opacity-90" : "opacity-70"} whitespace-nowrap`}>{t.hint}</span>
             </button>
@@ -373,129 +368,6 @@ function CommitmentsSection({
 }
 
 /* ---------------- Savings ---------------- */
-
-function SavingsSection({
-  showForm, setShowForm,
-}: { showForm: boolean; setShowForm: (v: boolean) => void }) {
-  const { savings, addSavingsGoal, addToSavings, removeSavingsGoal } = useStore();
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const [current, setCurrent] = useState("0");
-  const total = savings.reduce((a, b) => a + b.current, 0);
-  const goals = savings.reduce((a, b) => a + b.target, 0);
-
-  return (
-    <>
-      {showForm && (
-        <Card className="mt-4 space-y-3">
-          <Input label="اسم الهدف" value={name} onChange={setName} placeholder="مثال: رحلة صيفية" />
-          <div className="grid grid-cols-2 gap-2">
-            <Input label="المبلغ المستهدف" value={target} onChange={setTarget} type="number" placeholder="0" />
-            <Input label="ادخرتِ حالياً" value={current} onChange={setCurrent} type="number" placeholder="0" />
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => {
-                if (!name || !target) return;
-                addSavingsGoal({ name, target: Number(target), current: Number(current) || 0 });
-                setName(""); setTarget(""); setCurrent("0"); setShowForm(false);
-              }}
-              className="flex-1 rounded-full gradient-primary py-2.5 text-sm font-semibold text-primary-foreground"
-            >حفظ</button>
-            <button onClick={() => setShowForm(false)} className="rounded-full bg-muted px-4 py-2.5 text-sm font-medium">إلغاء</button>
-          </div>
-        </Card>
-      )}
-
-      {savings.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Card className="p-3 text-center">
-            <p className="text-[10px] text-muted-foreground">إجمالي المدخرات</p>
-            <p className="mt-1 text-sm font-bold text-success">{formatSAR(total)}</p>
-          </Card>
-          <Card className="p-3 text-center">
-            <p className="text-[10px] text-muted-foreground">إجمالي الأهداف</p>
-            <p className="mt-1 text-sm font-bold text-primary">{formatSAR(goals)}</p>
-          </Card>
-        </div>
-      )}
-
-      <div className="mt-3 space-y-2">
-        {savings.length === 0 && (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            ابدئي أول هدف ادخار وخلي فلوسك تكبر 🌱
-          </p>
-        )}
-        {savings.map((g) => {
-          const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-          const done = g.current >= g.target && g.target > 0;
-          return (
-            <Card key={g.id}>
-              <div className="flex items-center gap-3">
-                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${done ? "bg-success/15 text-success" : "bg-primary/10 text-primary"}`}>
-                  {done ? <Heart className="h-5 w-5" /> : <Target className="h-5 w-5" />}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold">{g.name}</p>
-                    <p className="shrink-0 text-xs text-muted-foreground">
-                      <span className="font-bold text-foreground">{formatSAR(g.current)}</span>
-                      {" / "}{formatSAR(g.target)}
-                    </p>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                    <div className={`h-full rounded-full transition-all ${done ? "bg-success" : "gradient-primary"}`} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-                <button
-                  onClick={() => removeSavingsGoal(g.id)}
-                  className="shrink-0 text-muted-foreground hover:text-destructive"
-                  aria-label="حذف"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {[10, 50, 100, 200].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => addToSavings(g.id, n)}
-                    className="rounded-full bg-success/10 px-3 py-1.5 text-xs font-semibold text-success hover:bg-success/20"
-                  >
-                    +{n}
-                  </button>
-                ))}
-                <button
-                  onClick={() => addToSavings(g.id, -10)}
-                  className="ms-auto grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground"
-                  aria-label="سحب 10"
-                  title="سحب 10"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-    </>
-  );
-}
-
-/* ---------------- Wishlist ---------------- */
-
-const wishCategories = [
-  { key: "عناية", emoji: "💄" },
-  { key: "ملابس", emoji: "👗" },
-  { key: "سيارة", emoji: "🚗" },
-  { key: "بيت", emoji: "🏠" },
-  { key: "إلكترونيات", emoji: "📱" },
-  { key: "هدايا", emoji: "🎁" },
-  { key: "سفر", emoji: "✈️" },
-  { key: "أخرى", emoji: "✨" },
-] as const;
-
-const iconChoices = ["💄","👗","👜","👟","💍","🧴","🌸","☕","📱","💻","🎧","🚗","⛽","🏠","🛋️","🎁","✈️","📚","🍰","🪞","🕯️","💗","✨","🎀"];
 
 function wishEmoji(cat?: string) {
   return wishCategories.find((c) => c.key === cat)?.emoji ?? "✨";
@@ -946,6 +818,8 @@ function AlinmaSection({
         </div>
       </div>
 
+      <AlinmaMonthlyCheck left={left} />
+
       {/* زر السحب من الادخار */}
       <button
         onClick={() => setShowBorrow((v) => !v)}
@@ -1062,6 +936,48 @@ function AlinmaSection({
       <BorrowsLog borrows={borrows} onRemove={removeAlinmaBorrow} />
 
     </>
+  );
+}
+
+function AlinmaMonthlyCheck({ left }: { left: number }) {
+  const { alinmaSavings, addAlinmaPayment, removeAlinmaPayment, currentMonth } = useStore();
+  const key = `alinma-plan-${currentMonth}`;
+  const [plan, setPlan] = useState("");
+  useEffect(() => { setPlan(localStorage.getItem(key) ?? ""); }, [key]);
+  const tag = `سداد شهر ${currentMonth} ✓`;
+  const existing = alinmaSavings.payments.find((p) => p.note === tag);
+  const amt = Number(plan) || 0;
+  const toggle = () => {
+    if (existing) { removeAlinmaPayment(existing.id); return; }
+    if (amt <= 0) return;
+    addAlinmaPayment({ amount: amt, date: new Date().toISOString().slice(0, 10), note: tag });
+  };
+  return (
+    <Card className={`mt-3 border ${existing ? "border-success/30 bg-success/5" : "border-info/20"}`}>
+      <p className="text-sm font-bold">سداد هالشهر — {monthLabel(currentMonth)}</p>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          onClick={toggle}
+          aria-label="تم السداد"
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 transition ${
+            existing ? "border-success bg-success text-success-foreground" : "border-border bg-card"
+          }`}
+        >
+          {existing && <Check className="h-5 w-5" />}
+        </button>
+        <input
+          value={existing ? String(existing.amount) : plan}
+          disabled={!!existing}
+          onChange={(e) => { setPlan(e.target.value); localStorage.setItem(key, e.target.value); }}
+          type="number"
+          placeholder="المبلغ اللي بتسددينه"
+          className="min-w-0 flex-1 rounded-full border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-70"
+        />
+      </div>
+      <p className={`mt-1.5 text-[11px] ${existing ? "text-success" : "text-muted-foreground"}`}>
+        {existing ? `تم ✓ انضاف للسداد — المتبقي ${formatSAR(left)} 💚` : amt > left && left > 0 ? "المبلغ أكبر من المتبقي" : "حطي صح ✓ بعد ما تسددين وينضاف تلقائيًا للسجل"}
+      </p>
+    </Card>
   );
 }
 
