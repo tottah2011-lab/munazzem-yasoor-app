@@ -369,6 +369,19 @@ function CommitmentsSection({
 
 /* ---------------- Savings ---------------- */
 
+const wishCategories = [
+  { key: "عناية", emoji: "💄" },
+  { key: "ملابس", emoji: "👗" },
+  { key: "سيارة", emoji: "🚗" },
+  { key: "بيت", emoji: "🏠" },
+  { key: "إلكترونيات", emoji: "📱" },
+  { key: "هدايا", emoji: "🎁" },
+  { key: "سفر", emoji: "✈️" },
+  { key: "أخرى", emoji: "✨" },
+] as const;
+
+const iconChoices = ["💄","👗","👜","👟","💍","🧴","🌸","☕","📱","💻","🎧","🚗","⛽","🏠","🛋️","🎁","✈️","📚","🍰","🪞","🕯️","💗","✨","🎀"];
+
 function wishEmoji(cat?: string) {
   return wishCategories.find((c) => c.key === cat)?.emoji ?? "✨";
 }
