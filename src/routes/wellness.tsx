@@ -117,6 +117,28 @@ function Wellness() {
     return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
   };
 
+  // أهداف تلقائية: أسبوعية وشهرية محسوبة من سجل الإنجاز
+  const periodScore = (keys: WellnessListKey[], from: string) => {
+    const days = Math.max(1, Math.round((new Date(today + "T00:00:00").getTime() - new Date(from + "T00:00:00").getTime()) / 86400000) + 1);
+    let target = 0, done = 0;
+    for (const k of keys)
+      for (const it of wellness[k] ?? []) {
+        const f = it.freq ?? "daily";
+        const n = (it.doneDates ?? []).filter((d) => d >= from && d <= today).length;
+        const t = f === "daily" ? days : freqTarget(f) * Math.max(1, Math.ceil(days / 7));
+        target += t; done += Math.min(n, t);
+      }
+    return { done, target, pct: target ? Math.round((done / target) * 100) : 0 };
+  };
+  const wkFrom = weekStartOf(today);
+  const moFrom = today.slice(0, 8) + "01";
+  const autoGoals = [
+    { label: "تمارين الأسبوع 🏋️‍♀️", ...periodScore(["workouts"], wkFrom) },
+    { label: "قراءة وتطوير الشهر 📚", ...periodScore(["selfDev"], moFrom) },
+    { label: "عناية الأسبوع 🌸", ...periodScore(["skinWeekly", "hairWeekly"], wkFrom) },
+    { label: "عبادات الشهر 🤲", ...periodScore(["worship"], moFrom) },
+  ];
+
   const tabs: { key: TabKey; label: string; emoji: string; keys: WellnessListKey[]; grad: string; ring: string }[] = [
     { key: "care", label: "عنايتي", emoji: "🌸", keys: ["skinCare", "hairCare", "skinWeekly", "hairWeekly", "vitamins"], grad: "from-pink-400 to-rose-300", ring: "#f472b6" },
     { key: "health", label: "صحتي", emoji: "🌿", keys: ["workouts", "meals"], grad: "from-emerald-400 to-teal-300", ring: "#34d399" },
@@ -198,6 +220,8 @@ function Wellness() {
       <div className="mt-4 grid grid-cols-4 gap-2">
         {tabs.map((t) => {
           const s = listScore(t.keys);
+          const wk = periodScore(t.keys, wkFrom);
+          const mo = periodScore(t.keys, moFrom);
           const active = tab === t.key;
           return (
             <button
@@ -209,6 +233,8 @@ function Wellness() {
                   : "border-border/60 bg-card/70 hover:bg-muted/50"
               }`}
             >
+              <span title="إنجاز الأسبوع" className={`absolute -top-1.5 -right-1 rounded-full px-1.5 py-0.5 text-[8px] font-black shadow-sm ${active ? "bg-white text-foreground" : "bg-primary text-primary-foreground"}`}>أ {wk.pct}%</span>
+              <span title="إنجاز الشهر" className={`absolute -top-1.5 -left-1 rounded-full px-1.5 py-0.5 text-[8px] font-black shadow-sm ${active ? "bg-white/90 text-foreground" : "bg-info text-info-foreground"}`}>ش {mo.pct}%</span>
               <span
                 className="grid h-11 w-11 place-items-center rounded-full text-lg"
                 style={{
@@ -227,6 +253,22 @@ function Wellness() {
           );
         })}
       </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {autoGoals.map((g) => (
+          <div key={g.label} className="rounded-2xl border border-border/60 bg-card/70 p-2.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-bold">{g.label}</span>
+              <span className="font-black text-primary">{g.pct}%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full gradient-primary transition-all" style={{ width: `${g.pct}%` }} />
+            </div>
+            <p className="mt-1 text-[9px] text-muted-foreground">{g.done} من {g.target} — تنحسب تلقائيًا ✨</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-center text-[9px] text-muted-foreground">أ = نسبة الأسبوع · ش = نسبة الشهر</p>
 
       <div className="mt-4 space-y-1">
         {tab === "care" && (
