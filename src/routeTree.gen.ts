@@ -13,7 +13,6 @@ import { Route as WellnessRouteImport } from './routes/wellness'
 import { Route as UrgentRouteImport } from './routes/urgent'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PostponableRouteImport } from './routes/postponable'
-import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as DebtsRouteImport } from './routes/debts'
@@ -37,11 +36,6 @@ const SettingsRoute = SettingsRouteImport.update({
 const PostponableRoute = PostponableRouteImport.update({
   id: '/postponable',
   path: '/postponable',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlannerRoute = PlannerRouteImport.update({
-  id: '/planner',
-  path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GoalsRoute = GoalsRouteImport.update({
@@ -70,7 +64,6 @@ export interface FileRoutesByFullPath {
   '/debts': typeof DebtsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
-  '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/settings': typeof SettingsRoute
   '/urgent': typeof UrgentRoute
@@ -81,7 +74,6 @@ export interface FileRoutesByTo {
   '/debts': typeof DebtsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
-  '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/settings': typeof SettingsRoute
   '/urgent': typeof UrgentRoute
@@ -93,7 +85,6 @@ export interface FileRoutesById {
   '/debts': typeof DebtsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
-  '/planner': typeof PlannerRoute
   '/postponable': typeof PostponableRoute
   '/settings': typeof SettingsRoute
   '/urgent': typeof UrgentRoute
@@ -106,7 +97,6 @@ export interface FileRouteTypes {
     | '/debts'
     | '/expenses'
     | '/goals'
-    | '/planner'
     | '/postponable'
     | '/settings'
     | '/urgent'
@@ -117,7 +107,6 @@ export interface FileRouteTypes {
     | '/debts'
     | '/expenses'
     | '/goals'
-    | '/planner'
     | '/postponable'
     | '/settings'
     | '/urgent'
@@ -128,7 +117,6 @@ export interface FileRouteTypes {
     | '/debts'
     | '/expenses'
     | '/goals'
-    | '/planner'
     | '/postponable'
     | '/settings'
     | '/urgent'
@@ -140,7 +128,6 @@ export interface RootRouteChildren {
   DebtsRoute: typeof DebtsRoute
   ExpensesRoute: typeof ExpensesRoute
   GoalsRoute: typeof GoalsRoute
-  PlannerRoute: typeof PlannerRoute
   PostponableRoute: typeof PostponableRoute
   SettingsRoute: typeof SettingsRoute
   UrgentRoute: typeof UrgentRoute
@@ -175,13 +162,6 @@ declare module '@tanstack/react-router' {
       path: '/postponable'
       fullPath: '/postponable'
       preLoaderRoute: typeof PostponableRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planner': {
-      id: '/planner'
-      path: '/planner'
-      fullPath: '/planner'
-      preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/goals': {
@@ -220,7 +200,6 @@ const rootRouteChildren: RootRouteChildren = {
   DebtsRoute: DebtsRoute,
   ExpensesRoute: ExpensesRoute,
   GoalsRoute: GoalsRoute,
-  PlannerRoute: PlannerRoute,
   PostponableRoute: PostponableRoute,
   SettingsRoute: SettingsRoute,
   UrgentRoute: UrgentRoute,
