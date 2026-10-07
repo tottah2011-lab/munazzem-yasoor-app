@@ -13,7 +13,7 @@ import {
 export const Route = createFileRoute("/expenses")({
   head: () => ({
     meta: [
-      { title: "خزنة مصاريفي — منظم مصاريفي" },
+      { title: "مركزي المالي — منظم مصاريفي" },
       { name: "description", content: "تقسيط، التزامات شهرية، ادخار، ورغبات الشراء في مكان واحد." },
       { property: "og:title", content: "خزنة مصاريفي" },
       { property: "og:description", content: "نظّمي أموالك: تقسيط، التزامات، ادخار، ورغبات." },
@@ -34,6 +34,7 @@ function ExpensesPage() {
   const s = useStore();
   const [tab, setTab] = useState<Tab>("installment");
   const [showForm, setShowForm] = useState(false);
+  const [mode, setMode] = useState<"spend" | "plan">("spend");
 
   const installments = s.urgent.filter((x) => x.installment && x.installment.monthsTotal > 0);
   const commitments = s.urgent.filter((x) => !x.installment || x.installment.monthsTotal === 0);
@@ -106,31 +107,26 @@ function ExpensesPage() {
         <p className="text-sm font-medium leading-relaxed">{encourage}</p>
       </Card>
 
-      {/* Hero summary */}
-      <div className="mt-4 relative overflow-hidden rounded-3xl gradient-primary p-5 text-primary-foreground shadow-soft">
-        <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute -bottom-10 -right-6 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-        <p className="text-xs opacity-90">إجمالي التزاماتك الشهرية</p>
-        <p className="mt-1 text-3xl font-black tracking-tight">
-          {formatSAR(commitmentsTotal + installmentMonthly)}
-        </p>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-          <div className="rounded-2xl bg-white/15 p-2 text-center">
-            <p className="opacity-80">تقسيط</p>
-            <p className="mt-0.5 font-bold">{formatSAR(installmentMonthly)}</p>
-          </div>
-          <div className="rounded-2xl bg-white/15 p-2 text-center">
-            <p className="opacity-80">التزامات</p>
-            <p className="mt-0.5 font-bold">{formatSAR(commitmentsTotal)}</p>
-          </div>
-          <div className="rounded-2xl bg-white/15 p-2 text-center">
-            <p className="opacity-80">إنماء متبقي</p>
-            <p className="mt-0.5 font-bold">{formatSAR(alinmaLeft)}</p>
-          </div>
+      <div className="mt-4"><IncomeAndBudgetFrame /></div>
 
-        </div>
+      <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+        {([["spend", "مصاريفي"], ["plan", "خطتي"]] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setMode(k)}
+            className={`rounded-full py-2 text-sm font-bold transition ${mode === k ? "gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground"}`}>
+            {l}
+          </button>
+        ))}
       </div>
 
+      {mode === "plan" ? (
+        <>
+          <ExtraIncomeSection />
+          <RewardSection />
+          <MonthlyPlanSection items={s.monthlyPlan} income={s.totalIncome} onAdd={s.addPlanItem} onUpdate={s.updatePlanItem}
+            onRemove={s.removePlanItem} onSpend={s.spendOnPlan} onReset={s.resetPlanSpent} />
+          <SurplusSection />
+        </>
+      ) : (<>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
         {tabs.map((t) => {
           const active = tab === t.key;
@@ -164,6 +160,7 @@ function ExpensesPage() {
       {tab === "daily" && <DailySection showForm={showForm} setShowForm={setShowForm} />}
       {tab === "wishlist" && <WishlistSection showForm={showForm} setShowForm={setShowForm} />}
       {tab === "alinma" && <AlinmaSection showForm={showForm} setShowForm={setShowForm} />}
+      </>)}
 
     </AppShell>
   );

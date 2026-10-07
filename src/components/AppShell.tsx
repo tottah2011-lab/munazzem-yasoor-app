@@ -1,12 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Home, Wallet, Heart, Moon, Sun, Settings, Sparkles, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Wallet, Heart, Moon, Sun, Settings, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { monthLabel, useStore } from "@/lib/store";
 
 const nav = [
   { to: "/", label: "الرئيسية", icon: Home, emoji: "🏠" },
   { to: "/expenses", label: "المصاريف", icon: Wallet, emoji: "💳" },
-  { to: "/planner", label: "التخطيط", icon: Sparkles, emoji: "✨" },
   { to: "/goals", label: "أهداف 2027", icon: Target, emoji: "🎯" },
   { to: "/wellness", label: "العناية", icon: Heart, emoji: "💖" },
 ] as const;
